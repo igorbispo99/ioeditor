@@ -19,11 +19,11 @@ int main(int argc, char* argv[]){
 		std::cout << "Error while opening " << argv[1] << std::endl;
 	}
 
-	file_ new_file(input_file);
+	file_ new_file(input_file, argv[1]);
 
 	new_file.show();
 
-	GUI g;
+	GUI g(new_file);
 
 	g.run();
 

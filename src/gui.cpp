@@ -1,11 +1,11 @@
 #include "gui.hpp"
 
-GUI::GUI() {
+GUI::GUI(file_ &f) {
 	int parent_x, parent_y; 
-	int bar_size = 3; 
 
 	initscr(); 
 	noecho(); 
+  nodelay(stdscr, true);
 	curs_set(FALSE); 
 
 	// get our maximum window dimensions 
@@ -18,13 +18,7 @@ GUI::GUI() {
 	txt_field = newwin(parent_y - bar_size, parent_x, 0, 0); 
 	bar_field = newwin(bar_size, parent_x, parent_y - bar_size, 0); 
 
-	// draw to our windows 
-	mvwprintw(txt_field, 0, 0, "TXT Field");
-	mvwprintw(bar_field, 0, 0, "Bar Field"); 
-
-	// refresh each window 
-	wrefresh(txt_field); 
-	wrefresh(bar_field); 
+  file_man = &f;
 }
 
 GUI::~GUI() {
@@ -62,14 +56,54 @@ void GUI::draw_border() {
     }
   }
 
-  // refresh each window 
-  wrefresh(txt_field); 
-  wrefresh(bar_field); 
+  // // refresh each window 
+  // wrefresh(txt_field); 
+  // wrefresh(bar_field); 
  
 }
 
+void GUI::put_current_txt() {
+  txt_content txt = file_man->get_current_txt();
+
+  // The first line is the border
+  int current_line = 1;
+
+  for (auto line : txt) {
+    auto formated_line = line ;
+    mvwprintw(txt_field, current_line, 2, formated_line.c_str());
+    current_line += 1;
+  }
+}
+
 void GUI::run() {
+  int parent_x, parent_y, new_x, new_y;
+  draw_border();
+
   while(1) {
-    draw_border();
+    getmaxyx(stdscr, new_y, new_x);
+
+    if (new_y != parent_y || new_x != parent_x) {
+      parent_x = new_x;
+      parent_y = new_y;
+
+      wresize(txt_field, new_y - bar_size, new_x);
+      wresize(bar_field, bar_size, new_x);
+
+      mvwin(bar_field, new_y - bar_size, 0);
+
+      wclear(stdscr);
+      wclear(txt_field);
+      wclear(bar_field);
+
+      draw_border();
+    }
+
+    // draw to our windows 
+    put_current_txt();
+    mvwprintw(bar_field, 1, 1, "IOE Igor's Own Editor --- %s", file_man->file_name.c_str()); 
+
+    // refresh each window 
+    wrefresh(txt_field); 
+    wrefresh(bar_field);
   }
 }
