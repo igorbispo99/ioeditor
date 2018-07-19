@@ -24,13 +24,33 @@ int _move_cursor (int k) {
   return SUCCESS;
 }
 
-int _display_txt (text* txt) {
-  if (!txt->initialized) {
+int _display_txt (text* txt, text_slice txt_slc) {
+  if (!txt->initialized)
     return ERROR;
+
+  // TODO Modularize txt_slice functions
+  // Text slice out of bounds
+  if (txt_slc.from_y >= txt->num_of_lines ||
+      txt_slc.from_y > txt_slc.to_y) {
+      return ERROR;
   }
-  for (size_t i = 0;i < txt->num_of_lines;i++) {
-    mvprintw(i+1, 1, txt->lines[i]);
+
+  int size_x, size_y;
+  getmaxyx(stdscr, size_y, size_x);
+ 
+  size_t scr_line = 1;
+  size_t to_txt_line = (txt_slc.to_y >= size_y ? size_y : txt_slc.to_y);
+  size_t l;
+  for (l = txt_slc.from_y ;l <= to_txt_line ;l++) {
+    mvprintw(scr_line, 1, txt->lines[l]);
+    scr_line += 1;
   }
+
+  if (l < size_y) {
+    for (size_t i = l+1; i < size_y; i++)
+      mvprintw(i, 1, "-");
+  }
+
   refresh();
   return SUCCESS;
 }
@@ -39,17 +59,20 @@ int _run (file* f) {
   if (!f->initialized) {
     return ERROR;
   }
-
-  // Init routines
   int size_x, size_y;
 
+  // Init routines
   initscr();
   noecho();
   nonl();
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
+
+  text_slice txt_slc;
+  txt_slc.from_y = 0;
+  txt_slc.to_y = f->txt->num_of_lines - 1;
   //nodelay(stdscr, true);
-  if(_display_txt(f->txt) == ERROR) {
+  if(_display_txt(f->txt, txt_slc) == ERROR) {
     return ERROR;
   }
 
@@ -68,5 +91,10 @@ int _run (file* f) {
     usleep(500);
   }
   
+  return SUCCESS;
+}
+
+int _clean () {
+  endwin();
   return SUCCESS;
 }

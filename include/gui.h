@@ -16,19 +16,27 @@ enum KEY {
   RIGHT
 };
 
+// Class text_slice
+typedef struct text_slice {
+  //int from_x, to_x;
+  int from_y, to_y;
+} text_slice;
+
 // Class gui
-#define gui_ {&_run, &_move_cursor, &_display_txt}
+#define gui_ {&_run, &_move_cursor, &_display_txt, &_clean}
 
 typedef struct gui gui;
 
 struct gui {
   int (*run) (file*);
   int (*move_cursor) (int);
-  int (*display_txt) (text*);
+  int (*display_txt) (text*, text_slice);
+  int (*clean) (void);
 };
 
 int _run(file*);
 int _move_cursor(int);
-int _display_txt(text*);
+int _display_txt(text*, text_slice);
+int _clean (void);
 
 #endif

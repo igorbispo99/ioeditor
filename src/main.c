@@ -13,5 +13,7 @@ int main() {
   g.run(f);
 
   io.destroy_file(f);
+  g.clean();
+  
   return 0;
 }
