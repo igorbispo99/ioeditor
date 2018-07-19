@@ -4,12 +4,14 @@
 
 int main() {
   file_io io = file_io_;
-  file *f = (file*) malloc(sizeof(file));
+  gui g = gui_;
 
+  file *f = (file*) malloc(sizeof(file));
   char *s = "example.c";  
 
   io.load_txt(f, s);
-  io.show_txt(f);
+  g.run(f);
 
+  io.destroy_file(f);
   return 0;
 }

@@ -21,7 +21,7 @@ typedef struct file {
 }file;
 
 // Class file_io
-#define file_io_ {&_show_txt, &_load_txt}
+#define file_io_ {&_show_txt, &_load_txt, &_destroy_file}
 
 typedef struct file_io file_io;
 

@@ -40,6 +40,7 @@ int _load_txt(file* f, char* filename) {
     f->txt = strcat(f->txt, line_buffer);
   }
   
+  free(line_buffer);
   return SUCCESS;
 }
 
@@ -47,6 +48,7 @@ int _destroy_file(file* f) {
   if (f->initialized) {
     free(f->txt);
     fclose(f->current_file);
+    free(f);
   }
   return SUCCESS;
 }
