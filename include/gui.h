@@ -13,16 +13,18 @@ enum KEY {
 };
 
 // Class gui
-#define gui_ {&_run, &_move_cursor}
+#define gui_ {&_run, &_move_cursor, &_display_txt}
 
 typedef struct gui gui;
 
 struct gui {
   int (*run) (file*);
   int (*move_cursor) (int);
+  int (*display_txt) (text*);
 };
 
 int _run(file*);
 int _move_cursor(int);
+int _display_txt(text*);
 
 #endif

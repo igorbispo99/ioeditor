@@ -6,33 +6,43 @@
 #include <stdlib.h>
 #include <string.h>
 
+//const size_t MAX_LINE_SIZE = 256;
+
 // Error handling
 enum SIGNAL {
   SUCCESS,
   ERROR
 };
 
+//Class text
+typedef struct text {
+  char** lines;
+  size_t num_of_lines;
+  bool initialized;
+} text;
+
 //Class file
 typedef struct file {
-  char* txt;
+  text* txt;
   FILE* current_file;
-  size_t txt_size;
   bool initialized;
 }file;
 
 // Class file_io
-#define file_io_ {&_show_txt, &_load_txt, &_destroy_file}
+#define file_io_ {&_show_txt, &_load_txt, &_destroy_txt,&_destroy_file}
 
 typedef struct file_io file_io;
 
 struct file_io {
   int (*show_txt) (file*);
   int (*load_txt) (file*, char*);
+  int (*destroy_txt) (text*);
   int (*destroy_file) (file*);
 };
 
 int _show_txt(file*);
 int _load_txt(file*, char*);
+int _destroy_txt (text*);
 int _destroy_file(file*);
 
 #endif

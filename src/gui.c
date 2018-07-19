@@ -24,6 +24,17 @@ int _move_cursor (int k) {
   return SUCCESS;
 }
 
+int _display_txt (text* txt) {
+  if (!txt->initialized) {
+    return ERROR;
+  }
+  for (size_t i = 0;i < txt->num_of_lines;i++) {
+    mvprintw(i+1, 1, txt->lines[i]);
+  }
+  refresh();
+  return SUCCESS;
+}
+
 int _run (file* f) {
   if (!f->initialized) {
     return ERROR;
@@ -32,10 +43,10 @@ int _run (file* f) {
   initscr();
   noecho();
   keypad(stdscr, TRUE);
-  
   //nodelay(stdscr, true);
-  mvprintw(1, 1, f->txt);
-  refresh();
+  if(_display_txt(f->txt) == ERROR) {
+    return ERROR;
+  }
 
   int k;
 
