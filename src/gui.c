@@ -40,20 +40,33 @@ int _run (file* f) {
     return ERROR;
   }
 
+  // Init routines
+  int size_x, size_y;
+
   initscr();
   noecho();
+  nonl();
   keypad(stdscr, TRUE);
+  getmaxyx(stdscr, size_y, size_x);
   //nodelay(stdscr, true);
   if(_display_txt(f->txt) == ERROR) {
     return ERROR;
   }
 
   int k;
+  bool insert_mode = true;
 
-  while ((k = getch()) != 'q') {
-    _move_cursor(k);
+  while (1) {
+    k = getch();
+    if (k == KEY_END) {
+      insert_mode = !insert_mode;
+    } else if (insert_mode) {
+      _move_cursor(k);
+    } else if (k == 'q') {
+      break;
+    }
     usleep(500);
   }
-
+  
   return SUCCESS;
 }

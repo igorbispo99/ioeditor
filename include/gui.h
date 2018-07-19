@@ -1,6 +1,10 @@
 #ifndef GUI_H_
 #define GUI_H_
 
+#ifndef CTRL
+#define CTRL(c) ((c) & 0x1f)
+#endif 
+
 #include "file_manager.h"
 #include <curses.h>
 #include <unistd.h>
