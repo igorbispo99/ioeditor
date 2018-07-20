@@ -50,6 +50,8 @@ int _display_txt (text* txt, text_slice txt_slc) {
     for (size_t i = l+1; i < size_y; i++)
       mvprintw(i, 1, "-");
   }
+  
+  move(1, 1);
 
   refresh();
   return SUCCESS;
