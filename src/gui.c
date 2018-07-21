@@ -114,8 +114,10 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       strcpy(new_line, txt->lines[current_line] + cursor_x);
 
       // Change current line size
-      txt->lines[current_line] = realloc(txt->lines[current_line], cursor_x+1);
-      txt->lines[current_line][cursor_x] = '\0';
+      // TODO Refactorize
+      txt->lines[current_line] = realloc(txt->lines[current_line], cursor_x+2);
+      txt->lines[current_line][cursor_x] = '\n';
+      txt->lines[current_line][cursor_x+1] = '\0';
 
       // Insert new line and move all lines 1 position down
       txt->lines = realloc(txt->lines, (txt->num_of_lines + 1) * sizeof(char*));
