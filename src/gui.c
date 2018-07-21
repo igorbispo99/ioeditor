@@ -77,17 +77,38 @@ int _move_cursor (int k) {
 }
 
 int _write_at_cursor (int k, text* txt, text_slice txt_slc) {
-  int cursor_x;
-  int cursor_y;
+  int cursor_x, new_x;
+  int cursor_y, new_y;
 
   getyx(stdscr, cursor_y, cursor_x);
 
-  // Writing on txt buffer
-  txt->lines[txt_slc.from_y + cursor_y][cursor_x] = (char) k;
+  // Delete char
+  if (k == KEY_DC) {
+    // Move elements after cursor to left
+    size_t current_line = txt_slc.from_y + cursor_y;
+    size_t line_size = strlen(txt->lines[current_line]);
+    
+    for (size_t i = cursor_x;i < line_size;i++) {
+      txt->lines[current_line][i] = txt->lines[current_line][i+1];
+    }
+
+    new_x = cursor_x;
+    new_y = cursor_y;
+  } else {
+    // Writing key on txt buffer
+    txt->lines[txt_slc.from_y + cursor_y][cursor_x] = (char) k;
+    new_x = cursor_x+1;
+    new_y = cursor_y;
+  }
 
   //Writing on screen buffer
-  mvprintw(cursor_y, cursor_x, "%c", (char) k);
+  if (_display_txt(txt, txt_slc) == ERROR) {
+    return ERROR;
+  }
 
+  //Move cursor to correct place
+  move(new_y, new_x);
+  refresh();
   return SUCCESS;
 }
 
@@ -104,7 +125,8 @@ int _display_txt (text* txt, text_slice txt_slc) {
 
   int size_x, size_y;
   getmaxyx(stdscr, size_y, size_x);
- 
+  wclear(stdscr);
+
   size_t scr_line = 0;
   size_t to_txt_line = (txt_slc.to_y >= size_y ? size_y : txt_slc.to_y);
   size_t l;
@@ -167,7 +189,7 @@ int _run (file* f) {
     usleep(500);
   }
 
-  mvprintw(size_y-1, 0, "Deseja salvar o buffer modificado? (s/n) => ");
+  mvprintw(size_y-1, 0, "Deseja salvar o buffer modificado? (s/N) => ");
   k = getch();
   
   return (k == 's' ? _write_file(f) : SUCCESS);
