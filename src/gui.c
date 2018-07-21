@@ -46,7 +46,11 @@ bool _can_move_cursor (int k, text* txt,
   // TODO Case when txt is larger than screen x size
 
   /* --------- Testing y_coord --------- */
-  if (next_y < 0 || next_y > txt_slc.to_y - txt_slc.from_y) {
+  if ((next_y < 0 && txt_slc.from_y == 0) || next_y > txt_slc.to_y - txt_slc.from_y) {
+    return false;
+  }
+
+  if (next_y + txt_slc.from_y >= txt->num_of_lines ) {
     return false;
   }
 
@@ -58,16 +62,43 @@ bool _can_move_cursor (int k, text* txt,
   return true;
 }
 
-int _move_cursor (int k) {
-  int cursor_x;
-  int cursor_y;
+int _move_cursor (int k, text* txt, text_slice* txt_slc) {
+  int cursor_x, new_x, size_x;
+  int cursor_y, new_y, size_y;
+  bool scroll = false;
 
   getyx(stdscr, cursor_y, cursor_x);
-  op_func op = eval_arrow(k);   
+  getmaxyx(stdscr, size_y, size_x);
+
+  op_func op = eval_arrow(k);
+  new_x = cursor_x;
+  new_y = cursor_y;   
 
   if (op) {
-    op(&cursor_x, &cursor_y);
-    move(cursor_y, cursor_x);
+    op(&new_x, &new_y);
+
+    // Case when cursor mov causes an scroll in txt
+    // TODO Refactorize scroll handling
+    if (new_y == size_y) {
+      if (k == KEY_DOWN) {
+        _scroll_txt(1, txt, txt_slc);
+        _display_txt(txt, *txt_slc);
+        scroll = true;
+      }
+    } else if (new_y == -1) {
+      if (k == KEY_UP) {
+        _scroll_txt(-1, txt, txt_slc);   
+        _display_txt(txt, *txt_slc);
+        scroll = true;
+      }
+    } 
+
+    if (!scroll) {
+      move(new_y, new_x);
+    } else {
+      move(cursor_y, cursor_x);
+    }
+
     refresh();
 
     return SUCCESS;   
@@ -207,10 +238,10 @@ int _display_txt (text* txt, text_slice txt_slc) {
   wclear(stdscr);
 
   size_t scr_line = 0;
-  size_t to_txt_line = (txt_slc.to_y >= size_y ? size_y : txt_slc.to_y);
+  size_t to_txt_line = txt_slc.to_y;
   size_t l;
   for (l = txt_slc.from_y ;l <= to_txt_line ;l++) {
-    mvprintw(scr_line, 0, txt->lines[l]);
+    mvaddstr(scr_line, 0, txt->lines[l]);
     scr_line += 1;
   }
 
@@ -238,7 +269,7 @@ int _run (file* f) {
 
   text_slice txt_slc;
   txt_slc.from_y = 0;
-  txt_slc.to_y = f->txt->num_of_lines - 1;
+  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y : f->txt->num_of_lines-1);
 
   if(_display_txt(f->txt, txt_slc) == ERROR) {
     return ERROR;
@@ -258,7 +289,7 @@ int _run (file* f) {
     } else if (insert_mode) {
       if (is_arrow(k)) { 
         if (_can_move_cursor(k, f->txt, txt_slc))
-          _move_cursor(k);
+          _move_cursor(k, f->txt, &txt_slc);
       } else { 
           _write_at_cursor(k, f->txt, &txt_slc);
       }
@@ -272,6 +303,19 @@ int _run (file* f) {
   k = getch();
   
   return (k == 's' ? _write_file(f) : SUCCESS);
+}
+
+int _scroll_txt(int n_lines, text* txt, text_slice* txt_slc) {
+  // Check if the scroll is valid
+  if (txt_slc->to_y + n_lines > txt->num_of_lines ||
+      txt_slc->from_y + n_lines > txt->num_of_lines) {
+    return ERROR;
+  }
+
+  txt_slc->from_y += n_lines;
+  txt_slc->to_y += n_lines;
+
+  return SUCCESS;
 }
 
 int _clean () {

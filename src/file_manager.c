@@ -29,11 +29,11 @@ int _load_txt(file* f, char* filename) {
   f->initialized = true;
   // end of Initialization
 
-  char* line_buffer = malloc(256);
-  if (!line_buffer) {
-    _destroy_file(f);
-    return ERROR;
-  }
+  char* line_buffer = NULL;
+  // if (!line_buffer) {
+  //   _destroy_file(f);
+  //   return ERROR;
+  // }
 
   size_t char_num_dump = 0;
   size_t* l_num = &f->txt->num_of_lines;
@@ -90,6 +90,7 @@ int _write_file(file* f) {
 
   out_file = fopen(out_file_name, "w+");
   if (!out_file) {
+    free(out_file_name);
     return ERROR;
   }
 

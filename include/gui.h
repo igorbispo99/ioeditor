@@ -26,25 +26,28 @@ typedef struct text_slice {
 
 // Class gui
 #define gui_ {&_run, &_can_move_cursor,\
-&_move_cursor, &_write_at_cursor, &_display_txt, &_clean}
+&_move_cursor, &_write_at_cursor, &_display_txt,\
+&_scroll_txt, &_clean}
 
 typedef struct gui gui;
 
 struct gui {
   int (*run) (file*);
   bool (*can_move_cursor) (int, text*, text_slice);
-  int (*move_cursor) (int);
+  int (*move_cursor) (int, text*, text_slice*);
   int (*write_at_cursor) (int, text*, text_slice*);
   int (*display_txt) (text*, text_slice);
+  int (*scroll_txt) (int, text*, text_slice*);
   int (*clean) (void);
 };
 
 int _run(file*);
 bool _can_move_cursor(int, text*, text_slice);
-int _move_cursor(int);
+int _move_cursor(int, text*, text_slice*);
 int _write_at_cursor(int, text*, text_slice*);
 int _display_txt(text*, text_slice);
 int _clean (void);
+int _scroll_txt(int, text*, text_slice*);
 // End of class gui
 
 // Misc functions
