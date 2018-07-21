@@ -26,10 +26,11 @@ typedef struct file {
   text* txt;
   FILE* current_file;
   bool initialized;
+  char* filename;
 }file;
 
 // Class file_io
-#define file_io_ {&_show_txt, &_load_txt, &_destroy_txt,&_destroy_file}
+#define file_io_ {&_show_txt, &_load_txt, &_destroy_txt, &_destroy_file, &_write_file}
 
 typedef struct file_io file_io;
 
@@ -38,11 +39,13 @@ struct file_io {
   int (*load_txt) (file*, char*);
   int (*destroy_txt) (text*);
   int (*destroy_file) (file*);
+  int (*write_file) (file*);
 };
 
 int _show_txt(file*);
 int _load_txt(file*, char*);
 int _destroy_txt (text*);
 int _destroy_file(file*);
+int _write_file(file*);
 
 #endif

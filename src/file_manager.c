@@ -16,10 +16,10 @@ int _load_txt(file* f, char* filename) {
   f->txt->lines = (char**) malloc(sizeof(char*));
   f->txt->num_of_lines = 0;
   f->txt->initialized = true;
-  //f->txt->lines[0] = (char*) malloc(1);
 
   // Initializing file
   f->current_file = fopen(filename, "r+");
+  f->filename = filename;
   
   if (!f->current_file) {
     _destroy_txt(f->txt);
@@ -75,5 +75,31 @@ int _destroy_file(file* f) {
     fclose(f->current_file);
     free(f);
   }
+  return SUCCESS;
+}
+
+int _write_file(file* f) {
+  // For now, the original file will not be replace
+  FILE* out_file;
+
+  char* out_file_name = calloc(256, sizeof(char));
+  if (!out_file_name){
+    return ERROR;
+  }
+
+  strcpy(out_file_name, strcat(f->filename, ".out"));
+
+  out_file = fopen(out_file_name, "w+");
+  if (!out_file) {
+    return ERROR;
+  }
+
+  for (size_t i = 0; i < f->txt->num_of_lines; i++) {
+    fprintf(out_file, "%s\n", f->txt->lines[i]);
+  }
+
+  fclose(out_file);
+  free(out_file_name);
+
   return SUCCESS;
 }
