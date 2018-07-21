@@ -31,7 +31,6 @@ int _load_txt(file* f, char* filename) {
 
   char* line_buffer = malloc(256);
   if (!line_buffer) {
-    _destroy_txt(f->txt);
     _destroy_file(f);
     return ERROR;
   }

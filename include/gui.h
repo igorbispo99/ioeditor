@@ -5,6 +5,8 @@
 #define CTRL(c) ((c) & 0x1f)
 #endif 
 
+#define EXP_ENTER 10
+
 #include "file_manager.h"
 #include <curses.h>
 #include <unistd.h>
@@ -32,7 +34,7 @@ struct gui {
   int (*run) (file*);
   bool (*can_move_cursor) (int, text*, text_slice);
   int (*move_cursor) (int);
-  int (*write_at_cursor) (int, text*, text_slice);
+  int (*write_at_cursor) (int, text*, text_slice*);
   int (*display_txt) (text*, text_slice);
   int (*clean) (void);
 };
@@ -40,13 +42,15 @@ struct gui {
 int _run(file*);
 bool _can_move_cursor(int, text*, text_slice);
 int _move_cursor(int);
-int _write_at_cursor(int, text*, text_slice);
+int _write_at_cursor(int, text*, text_slice*);
 int _display_txt(text*, text_slice);
 int _clean (void);
 // End of class gui
 
 // Misc functions
 bool is_arrow(int);
+void swap_chr_ptr(char**, char**);
+void swap_chr(char* a, char* b);
 
 // Operator functions
 typedef void (*op_func) (int* x, int* y);

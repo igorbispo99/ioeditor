@@ -14,7 +14,10 @@ int main(int argc, char* argv[]) {
   file *f = (file*) malloc(sizeof(file));
   char *s = argv[1];  
 
-  io.load_txt(f, s);
+  if (io.load_txt(f, s) == ERROR) {
+    return ERROR;
+  }
+  
   g.run(f);
 
   io.destroy_file(f);

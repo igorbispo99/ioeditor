@@ -76,33 +76,84 @@ int _move_cursor (int k) {
   }
 }
 
-int _write_at_cursor (int k, text* txt, text_slice txt_slc) {
+int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
   int cursor_x, new_x;
   int cursor_y, new_y;
+  int size_x, size_y;
 
   getyx(stdscr, cursor_y, cursor_x);
+  getmaxyx(stdscr, size_y, size_x);
 
-  // Delete char
-  if (k == KEY_DC) {
-    // Move elements after cursor to left
-    size_t current_line = txt_slc.from_y + cursor_y;
-    size_t line_size = strlen(txt->lines[current_line]);
+  // Auxiliary vars
+  size_t current_line = txt_slc->from_y + cursor_y;
+  size_t line_size = strlen(txt->lines[current_line]);
+
+  // Aux line
+  char* new_line = NULL;
+
+  switch (k) {
+    // Case DELETE
+    case KEY_DC:
+      // Move elements after cursor to left
+      for (size_t i = cursor_x;i < line_size;i++) {
+        txt->lines[current_line][i] = txt->lines[current_line][i+1];
+      }
+
+      new_x = cursor_x;
+      new_y = cursor_y;
+
+      break;
     
-    for (size_t i = cursor_x;i < line_size;i++) {
-      txt->lines[current_line][i] = txt->lines[current_line][i+1];
-    }
+    // Case ENTER (new line)
+    case '\n':
+      // Allocate the new line
+      new_line = calloc(line_size-cursor_x+1, sizeof(char));
 
-    new_x = cursor_x;
-    new_y = cursor_y;
-  } else {
-    // Writing key on txt buffer
-    txt->lines[txt_slc.from_y + cursor_y][cursor_x] = (char) k;
-    new_x = cursor_x+1;
-    new_y = cursor_y;
-  }
+      // Copy remain caracters after the cursor
+      strcpy(new_line, txt->lines[current_line] + cursor_x);
+
+      // Change current line size
+      txt->lines[current_line] = realloc(txt->lines[current_line], cursor_x+1);
+      txt->lines[current_line][cursor_x] = '\0';
+
+      // Insert new line and move all lines 1 position down
+      txt->lines = realloc(txt->lines, (txt->num_of_lines + 1) * sizeof(char*));
+      txt->lines[txt->num_of_lines] = new_line;
+
+      for (size_t i = txt->num_of_lines-1; i > cursor_y; i--) {
+        swap_chr_ptr(&(txt->lines[i]), &(txt->lines[i+1]));
+      }
+
+      // Increase num of lines
+      txt->num_of_lines += 1;
+
+      if (txt_slc->to_y < size_y) {
+        txt_slc->to_y += 1;
+      }
+
+      new_x = 0;
+      new_y = cursor_y + 1;
+
+      break;
+
+    // Case common char (letter/num)
+    default:
+      // Increase size of line
+      txt->lines[current_line] = realloc(txt->lines[current_line], line_size+1);
+      txt->lines[current_line][line_size] = (char) k;
+
+      // Move all elements one position to right
+      for (size_t i = line_size - 1; i > cursor_x; i--) {
+        swap_chr(&(txt->lines[current_line][i]), &(txt->lines[current_line][i+1]));
+      }
+
+      new_x = cursor_x+1;
+      new_y = cursor_y;
+
+  } //end switch key
 
   //Writing on screen buffer
-  if (_display_txt(txt, txt_slc) == ERROR) {
+  if (_display_txt(txt, *txt_slc) == ERROR) {
     return ERROR;
   }
 
@@ -153,7 +204,7 @@ int _run (file* f) {
   // Init routines
   initscr();
   noecho();
-  nonl();
+  //nonl();
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
 
@@ -181,7 +232,7 @@ int _run (file* f) {
         if (_can_move_cursor(k, f->txt, txt_slc))
           _move_cursor(k);
       } else { 
-          _write_at_cursor(k, f->txt, txt_slc);
+          _write_at_cursor(k, f->txt, &txt_slc);
       }
     } else if (k == 'q') {
       break;
@@ -212,3 +263,15 @@ bool is_arrow(int k) {
   }
   return false;
 } 
+
+void swap_chr_ptr(char** a, char** b) {
+  char *a_ = *a;
+  *a = *b;
+  *b = a_;
+}
+
+void swap_chr(char* a, char* b) {
+  char a_ = *a;
+  *a = *b;
+  *b = a_;
+}
