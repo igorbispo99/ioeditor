@@ -45,8 +45,8 @@ int _load_txt(file* f, char* filename) {
     f->txt->lines[*l_num] = calloc(sizeof(char), line_size + 1);
     memcpy(f->txt->lines[*l_num], line_buffer, line_size);
 
-    if (f->txt->lines[*l_num][line_size-1] == '\n')  
-      f->txt->lines[*l_num][line_size-1] = '\0';
+    // if (f->txt->lines[*l_num][line_size-1] == '\n')  
+    //   f->txt->lines[*l_num][line_size-1] = '\0';
       
     *l_num = *l_num + 1;
     f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
@@ -93,8 +93,14 @@ int _write_file(file* f) {
     return ERROR;
   }
 
+  size_t len_line;
   for (size_t i = 0; i < f->txt->num_of_lines; i++) {
-    fprintf(out_file, "%s\n", f->txt->lines[i]);
+    len_line = strlen(f->txt->lines[i]);
+    // TODO Refactorize code
+    if (f->txt->lines[i][len_line-1] == '\n')
+      fprintf(out_file, "%s", f->txt->lines[i]);
+    else
+      fprintf(out_file, "%s\n", f->txt->lines[i]);
   }
 
   fclose(out_file);

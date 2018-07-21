@@ -51,7 +51,7 @@ bool _can_move_cursor (int k, text* txt,
   }
 
   /* --------- Testing x_coord --------- */
-  if (next_x < 0 || next_x > strlen(txt->lines[txt_slc.from_y + next_y])) {
+  if (next_x < 0 || next_x > strlen(txt->lines[txt_slc.from_y + next_y])-1) {
     return false;
   }
 
@@ -98,6 +98,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       for (size_t i = cursor_x;i < line_size;i++) {
         txt->lines[current_line][i] = txt->lines[current_line][i+1];
       }
+      txt->lines[current_line][line_size] = '\0';
 
       new_x = cursor_x;
       new_y = cursor_y;
@@ -139,7 +140,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case common char (letter/num)
     default:
       // Increase size of line
-      txt->lines[current_line] = realloc(txt->lines[current_line], line_size+1);
+      txt->lines[current_line] = realloc(txt->lines[current_line], line_size+2);
       txt->lines[current_line][line_size] = (char) k;
 
       // Move all elements one position to right
@@ -149,6 +150,8 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
 
       new_x = cursor_x+1;
       new_y = cursor_y;
+
+      txt->lines[current_line][line_size+1] = '\0';
 
   } //end switch key
 
