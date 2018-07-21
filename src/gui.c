@@ -95,6 +95,8 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case DELETE
     case KEY_DC:
       // Move elements after cursor to left
+      // TODO Corner case when char removal causes line colapse
+      
       for (size_t i = cursor_x;i < line_size;i++) {
         txt->lines[current_line][i] = txt->lines[current_line][i+1];
       }
@@ -146,7 +148,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       txt->lines[current_line][line_size] = (char) k;
 
       // Move all elements one position to right
-      for (size_t i = line_size - 1; i > cursor_x; i--) {
+      for (int i = line_size - 1; i >= cursor_x && i >= 0; i--) {
         swap_chr(&(txt->lines[current_line][i]), &(txt->lines[current_line][i+1]));
       }
 
