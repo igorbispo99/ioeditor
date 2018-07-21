@@ -46,7 +46,7 @@ bool _can_move_cursor (int k, text* txt,
   // TODO Case when txt is larger than screen x size
 
   /* --------- Testing y_coord --------- */
-  if ((next_y < 0 && txt_slc.from_y == 0) || next_y > txt_slc.to_y - txt_slc.from_y) {
+  if ((next_y < 0 && txt_slc.from_y == 0) || (cursor_y > (txt_slc.to_y-txt_slc.from_y))) {
     return false;
   }
 
@@ -125,6 +125,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
   switch (k) {
     // Case DELETE
     case KEY_DC:
+      //TODO Fix bug delete
       // Move elements after cursor to left
 
       // Case when char removal causes line colapse
@@ -137,7 +138,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
         strcpy(txt->lines[current_line]+line_size-1, txt->lines[current_line+1]);
 
         // Move all lines after current line 1 position up
-        for (size_t i = cursor_y+1;i < txt->num_of_lines-1;i++) {
+        for (size_t i = current_line + 1;i < txt->num_of_lines-1;i++) {
           txt->lines[i] = txt->lines[i+1];
         }
 
@@ -145,7 +146,9 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
         txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
 
         txt->num_of_lines -= 1;
-        txt_slc->to_y -= 1;
+        if (txt_slc->to_y == txt->num_of_lines) {
+          txt_slc->to_y -= 1;
+        }
 
       } else {
         for (size_t i = cursor_x;i < line_size;i++) {
@@ -177,7 +180,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       txt->lines = realloc(txt->lines, (txt->num_of_lines + 1) * sizeof(char*));
       txt->lines[txt->num_of_lines] = new_line;
 
-      for (size_t i = txt->num_of_lines-1; i > cursor_y; i--) {
+      for (size_t i = txt->num_of_lines-1; i > current_line; i--) {
         swap_chr_ptr(&(txt->lines[i]), &(txt->lines[i+1]));
       }
 
@@ -269,7 +272,7 @@ int _run (file* f) {
 
   text_slice txt_slc;
   txt_slc.from_y = 0;
-  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y : f->txt->num_of_lines-1);
+  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-1);
 
   if(_display_txt(f->txt, txt_slc) == ERROR) {
     return ERROR;
