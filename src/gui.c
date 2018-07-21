@@ -95,12 +95,33 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case DELETE
     case KEY_DC:
       // Move elements after cursor to left
-      // TODO Corner case when char removal causes line colapse
-      
-      for (size_t i = cursor_x;i < line_size;i++) {
-        txt->lines[current_line][i] = txt->lines[current_line][i+1];
+
+      // Case when char removal causes line colapse
+      if (cursor_x == line_size - 1) {
+        // Realloc current line
+        size_t next_line_size = strlen(txt->lines[current_line+1]);
+        txt->lines[current_line] = realloc(txt->lines[current_line], line_size + next_line_size);
+
+        // Create concatenate current line with next line
+        strcpy(txt->lines[current_line]+line_size-1, txt->lines[current_line+1]);
+
+        // Move all lines after current line 1 position up
+        for (size_t i = cursor_y+1;i < txt->num_of_lines-1;i++) {
+          txt->lines[i] = txt->lines[i+1];
+        }
+
+        // Realloc lines array
+        txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
+
+        txt->num_of_lines -= 1;
+        txt_slc->to_y -= 1;
+
+      } else {
+        for (size_t i = cursor_x;i < line_size;i++) {
+          txt->lines[current_line][i] = txt->lines[current_line][i+1];
+        }
+        txt->lines[current_line][line_size] = '\0';
       }
-      txt->lines[current_line][line_size] = '\0';
 
       new_x = cursor_x;
       new_y = cursor_y;
