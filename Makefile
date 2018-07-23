@@ -1,6 +1,6 @@
 IDIR=./include
 CC=gcc
-CXXFLAGS=-I$(IDIR) -O0 -g 
+CXXFLAGS=-I$(IDIR) -O2 -g 
 LIBS=-lm -lncurses
 
 SRC=src

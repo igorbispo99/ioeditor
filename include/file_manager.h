@@ -39,13 +39,13 @@ struct file_io {
   int (*load_txt) (file*, char*);
   int (*destroy_txt) (text*);
   int (*destroy_file) (file*);
-  int (*write_file) (file*);
+  int (*write_file) (file*, char*);
 };
 
 int _show_txt(file*);
 int _load_txt(file*, char*);
 int _destroy_txt (text*);
 int _destroy_file(file*);
-int _write_file(file*);
+int _write_file(file*, char*);
 
 #endif

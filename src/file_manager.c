@@ -15,15 +15,27 @@ int _load_txt(file* f, char* filename) {
   f->txt = (text*) calloc(1, sizeof(text));
   f->txt->lines = (char**) malloc(sizeof(char*));
   f->txt->num_of_lines = 0;
-  f->txt->initialized = true;
+
 
   // Initializing file
-  f->current_file = fopen(filename, "r+");
+  f->current_file = fopen(filename, "r");
   f->filename = filename;
   
+  // File dont exists
   if (!f->current_file) {
-    _destroy_txt(f->txt);
-    return ERROR;
+    f->current_file = fopen(filename, "w+");
+    
+    if(!f->current_file) {
+      _destroy_txt(f->txt);
+      return ERROR;
+    }
+
+    f->txt->num_of_lines = 1;
+    f->txt->lines[0] = calloc(2, sizeof(char));
+    f->txt->initialized = true;
+
+    f->initialized = true;
+    return SUCCESS;
   }
 
   f->initialized = true;
@@ -52,6 +64,7 @@ int _load_txt(file* f, char* filename) {
     f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
   }
 
+  f->txt->initialized = true;
   free(line_buffer);
   return SUCCESS;
 }
@@ -77,24 +90,25 @@ int _destroy_file(file* f) {
   return SUCCESS;
 }
 
-int _write_file(file* f) {
+int _write_file(file* f, char* filename) {
   // For now, the original file will not be replace
   FILE* out_file;
 
-  char* out_file_name = calloc(256, sizeof(char));
-  if (!out_file_name){
-    return ERROR;
-  }
-
-  strcpy(out_file_name, strcat(f->filename, ".out"));
+  char* out_file_name = filename;
+  // char* out_file_name = calloc(256, sizeof(char));
+  // if (!out_file_name){
+  //   return ERROR;
+  // }
+  // strcpy(out_file_name, strcat(f->filename, ".out"));
 
   out_file = fopen(out_file_name, "w+");
   if (!out_file) {
-    free(out_file_name);
+    //free(out_file_name);
     return ERROR;
   }
 
   size_t len_line;
+
   for (size_t i = 0; i < f->txt->num_of_lines; i++) {
     len_line = strlen(f->txt->lines[i]);
     // TODO Refactorize code
@@ -105,7 +119,6 @@ int _write_file(file* f) {
   }
 
   fclose(out_file);
-  free(out_file_name);
-
+  //free(out_file_name);
   return SUCCESS;
 }
