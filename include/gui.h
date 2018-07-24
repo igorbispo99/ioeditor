@@ -12,11 +12,10 @@
 #include <unistd.h>
 #include <locale.h>
 
-enum KEY {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT
+enum COMMAND_KEYS {
+  END_LINE,
+  BEGIN_LINE,
+  END_FILE
 };
 
 // Class text_slice

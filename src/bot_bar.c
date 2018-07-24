@@ -62,7 +62,7 @@ int _display_bar(bar* b) {
   int size_x, size_y, blank_size;
   getmaxyx(stdscr, size_y, size_x);
 
-  char* blank_line = malloc(size_x+1);
+  char* blank_line = calloc(size_x+1, sizeof(char));
   if (!blank_line) return ERROR;
 
   memset(blank_line, ' ', size_x) ;

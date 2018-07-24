@@ -71,6 +71,39 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
   getyx(stdscr, cursor_y, cursor_x);
   getmaxyx(stdscr, size_y, size_x);
 
+  // Command options
+
+  // End of line
+  if (k == END_LINE) {
+    size_t end_of_line_pos;
+    end_of_line_pos = strlen(txt->lines[txt_slc->from_y+cursor_y]);
+
+    move(cursor_y, end_of_line_pos-1);
+
+    refresh();
+    return SUCCESS;   
+  } 
+
+  // Begin of line
+  if (k == BEGIN_LINE) {
+    move(cursor_y , 0);
+
+    refresh();
+    return SUCCESS;      
+  }
+
+  // Go to EOF
+  if (k == END_FILE) {
+    size_t scroll_offset = (txt->num_of_lines-size_y) - txt_slc->from_y + 1;
+    _scroll_txt(scroll_offset, txt, txt_slc);
+
+    _display_txt(txt, *txt_slc);
+    refresh();
+    return SUCCESS;     
+  }
+
+  // End of command options
+
   op_func op = eval_arrow(k);
   new_x = cursor_x;
   new_y = cursor_y;   
@@ -80,6 +113,7 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
 
     // Case when cursor mov causes an scroll in txt
     // TODO Refactorize scroll handling
+
     if (new_y == size_y-1) {
       if (k == KEY_DOWN) {
         _scroll_txt(1, txt, txt_slc);
@@ -197,6 +231,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
         for (size_t i = current_line;i < txt->num_of_lines-1;i++) {
           txt->lines[i] = txt->lines[i+1];
         }
+
 
         // Realloc lines array
         txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
@@ -331,10 +366,9 @@ int _run (file* f) {
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
 
-
   text_slice txt_slc;
   txt_slc.from_y = 0;
-  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-2);
+  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-1);
 
   if(_display_txt(f->txt, txt_slc) == ERROR) {
     return ERROR;
@@ -363,6 +397,12 @@ int _run (file* f) {
       }
     } else if (k == 'q') {
       break;
+    } else if (k == 't') {
+      _move_cursor(END_LINE, f->txt, &txt_slc);
+    } else if (k == 'v') {
+      _move_cursor(BEGIN_LINE, f->txt, &txt_slc);
+    } else if (k == ']') {
+      _move_cursor(END_FILE, f->txt, &txt_slc);
     }
     usleep(250);
     b.display_lines_count(&b);
