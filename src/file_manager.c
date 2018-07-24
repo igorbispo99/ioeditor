@@ -16,7 +16,6 @@ int _load_txt(file* f, char* filename) {
   f->txt->lines = (char**) malloc(sizeof(char*));
   f->txt->num_of_lines = 0;
 
-
   // Initializing file
   f->current_file = fopen(filename, "r");
   f->filename = filename;
@@ -31,6 +30,7 @@ int _load_txt(file* f, char* filename) {
     }
 
     f->txt->num_of_lines = 1;
+    f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(2));
     f->txt->lines[0] = calloc(2, sizeof(char));
     f->txt->initialized = true;
 
@@ -42,10 +42,6 @@ int _load_txt(file* f, char* filename) {
   // end of Initialization
 
   char* line_buffer = NULL;
-  // if (!line_buffer) {
-  //   _destroy_file(f);
-  //   return ERROR;
-  // }
 
   size_t char_num_dump = 0;
   size_t* l_num = &f->txt->num_of_lines;
@@ -57,11 +53,15 @@ int _load_txt(file* f, char* filename) {
     f->txt->lines[*l_num] = calloc(sizeof(char), line_size + 1);
     memcpy(f->txt->lines[*l_num], line_buffer, line_size);
 
-    // if (f->txt->lines[*l_num][line_size-1] == '\n')  
-    //   f->txt->lines[*l_num][line_size-1] = '\0';
-      
     *l_num = *l_num + 1;
     f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
+  }
+
+  // Case when the file only contains the '\0'
+  if (*l_num == 0) {
+    f->txt->num_of_lines = 1;
+    f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
+    f->txt->lines[0] = calloc(2, sizeof(char));
   }
 
   f->txt->initialized = true;

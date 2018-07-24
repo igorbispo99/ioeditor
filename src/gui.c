@@ -232,7 +232,6 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
           txt->lines[i] = txt->lines[i+1];
         }
 
-
         // Realloc lines array
         txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
 
@@ -381,45 +380,62 @@ int _run (file* f) {
   move(0, 0);
 
   int k;
-  bool insert_mode = true;
+  //bool insert_mode = true;
 
   while (1) {
     k = getch();
     // TODO Refactorize GUI execution flow
-    if (k == KEY_END) {
-      insert_mode = !insert_mode;
-    } else if (insert_mode) {
+
+    // Command cases
+    if (k == CTRL('q')) {
+      break;
+    } else if (k ==  CTRL('v')) {
+      _move_cursor(END_LINE, f->txt, &txt_slc);
+    } else if (k == CTRL('t')) {
+      _move_cursor(BEGIN_LINE, f->txt, &txt_slc);
+    } else if (k ==  CTRL(']')) {
+      _move_cursor(END_FILE, f->txt, &txt_slc);
+    
+    // Insertion cases
+    } else {
       if (is_arrow(k)) { 
         if (_can_move_cursor(k, f->txt, txt_slc))
           _move_cursor(k, f->txt, &txt_slc);
       } else { 
           _write_at_cursor(k, f->txt, &txt_slc);
       }
-    } else if (k == 'q') {
-      break;
-    } else if (k == 't') {
-      _move_cursor(END_LINE, f->txt, &txt_slc);
-    } else if (k == 'v') {
-      _move_cursor(BEGIN_LINE, f->txt, &txt_slc);
-    } else if (k == ']') {
-      _move_cursor(END_FILE, f->txt, &txt_slc);
     }
+
     usleep(250);
     b.display_lines_count(&b);
   }
 
-  mvprintw(size_y-1, 0, "Deseja salvar o buffer modificado? (s/N) => ");
+  attron(A_REVERSE);
+  mvprintw(size_y-1, 0, "Salvar o buffer modificado? (s/N) => ");
   k = getch();
 
   if (k == 's') {
     char filename[256];
+    memset(filename, '\0', 256);
+    strcpy(filename, f->filename);
+
     echo();
 
     // TODO Implement bottom bar
-    mvprintw(size_y-1, 0, "                                              ");
-    mvprintw(size_y-1, 0, "Nome do arquivo => ");
-    getstr(filename);
+    move(size_y-1, 0);
+    clrtoeol();
 
+    printw("Nome do arquivo => ");
+    printw(filename);
+
+    k = getch();
+
+    if (k != '\n') {
+      memset(filename+strlen(filename), k, 1);
+      getstr(filename+strlen(filename));
+    }
+
+    attroff(A_REVERSE);
     return  _write_file(f, filename);
   }
   

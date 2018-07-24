@@ -13,14 +13,19 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ =  file_manager.o main.o gui.o bot_bar.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+all : $(BIN)/main.out
+
 $(ODIR)/%.o: $(SRC)/%.c $(DEPS)
 				$(CC) -c -o $@ $< $(CXXFLAGS) 
 
 $(BIN)/main.out : $(OBJ)
 	$(CC) -o $@ $^ $(CXXFLAGS) $(LIBS)
 	
-.PHONY: clean
+.PHONY: clean install
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
-	rm $(BIN)/*.out
+	rm $(BIN)/*
+
+install: $(BIN)/main.out
+	sudo cp $(BIN)/main.out /usr/bin/ioe
