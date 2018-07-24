@@ -10,6 +10,7 @@
 #include "file_manager.h"
 #include <curses.h>
 #include <unistd.h>
+#include <locale.h>
 
 enum KEY {
   UP,

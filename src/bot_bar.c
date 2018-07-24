@@ -63,6 +63,8 @@ int _display_bar(bar* b) {
   getmaxyx(stdscr, size_y, size_x);
 
   char* blank_line = malloc(size_x+1);
+  if (!blank_line) return ERROR;
+
   memset(blank_line, ' ', size_x) ;
 
   attron(A_REVERSE);
@@ -71,4 +73,6 @@ int _display_bar(bar* b) {
 
   _display_splash(b);
   _display_lines_count(b);
+
+  return SUCCESS;
 }

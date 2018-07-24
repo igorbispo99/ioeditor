@@ -47,11 +47,11 @@ bool _can_move_cursor (int k, text* txt,
   // TODO Case when txt is larger than screen x size
 
   /* --------- Testing y_coord --------- */
-  if ((next_y < 0 && txt_slc.from_y == 0) || (cursor_y > (txt_slc.from_y+screen_y))) {
+  if ((next_y < 0 && txt_slc.from_y == 0) || (cursor_y > (txt_slc.from_y+screen_y)+2)) {
     return false;
   }
 
-  if (next_y + txt_slc.from_y >= txt->num_of_lines ) {
+  if (next_y + txt_slc.from_y >= txt->num_of_lines) {
     return false;
   }
 
@@ -80,7 +80,7 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
 
     // Case when cursor mov causes an scroll in txt
     // TODO Refactorize scroll handling
-    if (new_y == size_y) {
+    if (new_y == size_y-1) {
       if (k == KEY_DOWN) {
         _scroll_txt(1, txt, txt_slc);
         _display_txt(txt, *txt_slc);
@@ -175,6 +175,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       break;
     
     // Case BACKSPACE
+    case 127:
     case KEY_BACKSPACE:
       if (current_line == 0 && cursor_x == 0) {
         new_x = cursor_x;
@@ -215,7 +216,8 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
         }
         txt->lines[current_line][line_size] = '\0';  
 
-        mvaddstr(current_line, 0, txt->lines[current_line]);
+        clrtoeol();
+        mvaddstr(cursor_y, 0, txt->lines[current_line]);
 
         new_x = cursor_x-1;
         new_y = cursor_y;     
@@ -275,7 +277,8 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       txt->lines[current_line][line_size+1] = '\0';
 
       // Updating line screen buffer
-      mvaddstr(current_line, 0, txt->lines[current_line]);
+      clrtoeol();
+      mvaddstr(cursor_y, 0, txt->lines[current_line]);
 
   } //end switch key
 
@@ -289,29 +292,24 @@ int _display_txt (text* txt, text_slice txt_slc) {
   if (!txt->initialized)
     return ERROR;
 
-  // TODO Modularize txt_slice functions
-  // Text slice out of bounds
-  // if (txt_slc.from_y >= txt->num_of_lines ||
-  //     txt_slc.from_y > txt_slc.to_y) {
-  //     return ERROR;
-  // }
-
   int size_x, size_y;
   getmaxyx(stdscr, size_y, size_x);
-  wclear(stdscr);
 
   size_t scr_line = 0;
-  size_t scr_limit = size_y + txt_slc.from_y;
+  size_t scr_limit = size_y + txt_slc.from_y-1;
   size_t to_txt_line = (txt->num_of_lines > scr_limit ? scr_limit : txt->num_of_lines) ;
   size_t l;
 
   for (l = txt_slc.from_y ;l < to_txt_line ;l++) {
+    clrtoeol();
     mvaddstr(scr_line, 0, txt->lines[l]);
     scr_line += 1;
   }
 
-  for (size_t i = l; i < scr_limit; i++)
+  for (size_t i = l; i < scr_limit; i++) {
+    clrtoeol();
     mvprintw(i, 0, "*");
+  }
 
   refresh();
   return SUCCESS;
@@ -327,6 +325,8 @@ int _run (file* f) {
   // Init routines
   initscr();
   noecho();
+  raw();
+  setlocale(LC_CTYPE, "");
   //nonl();
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
@@ -334,7 +334,7 @@ int _run (file* f) {
 
   text_slice txt_slc;
   txt_slc.from_y = 0;
-  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-1);
+  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-2);
 
   if(_display_txt(f->txt, txt_slc) == ERROR) {
     return ERROR;
@@ -364,7 +364,7 @@ int _run (file* f) {
     } else if (k == 'q') {
       break;
     }
-    usleep(500);
+    usleep(250);
     b.display_lines_count(&b);
   }
 

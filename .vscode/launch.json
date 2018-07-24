@@ -9,12 +9,12 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/main.out",
-      "args": ["test.c"],
+      "args": ["../src/file_manager.c"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/bin",
       "environment": [],
       "externalConsole": true,
-      "MIMode": "gdb"
+      "MIMode": "lldb"
     }
   ]
 }
