@@ -8,6 +8,10 @@
     "string_view": "c",
     "utility": "c",
     "vector": "c",
-    "algorithm": "c"
+    "algorithm": "c",
+    "file_manager.h": "c",
+    "stdio.h": "c",
+    "bot_bar.h": "c",
+    "stdbool.h": "c"
   }
 }

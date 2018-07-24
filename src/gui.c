@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "bot_bar.h"
 
 // OP functions
 void _op_up(int* x, int* y) {*x=*x; *y=*y-1;}
@@ -321,6 +322,7 @@ int _run (file* f) {
     return ERROR;
   }
   int size_x, size_y;
+  bar b = bar_;
 
   // Init routines
   initscr();
@@ -328,6 +330,7 @@ int _run (file* f) {
   //nonl();
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
+
 
   text_slice txt_slc;
   txt_slc.from_y = 0;
@@ -337,7 +340,9 @@ int _run (file* f) {
     return ERROR;
   }
 
-  _display_bar();
+  // Initializing bar
+  b.init(&b, f, &txt_slc);
+  b.display_bar(&b);
 
   move(0, 0);
 
@@ -346,7 +351,6 @@ int _run (file* f) {
 
   while (1) {
     k = getch();
-
     // TODO Refactorize GUI execution flow
     if (k == KEY_END) {
       insert_mode = !insert_mode;
@@ -361,6 +365,7 @@ int _run (file* f) {
       break;
     }
     usleep(500);
+    b.display_lines_count(&b);
   }
 
   mvprintw(size_y-1, 0, "Deseja salvar o buffer modificado? (s/N) => ");
@@ -396,25 +401,6 @@ int _scroll_txt(int n_lines, text* txt, text_slice* txt_slc) {
 
 int _clean () {
   endwin();
-  return SUCCESS;
-}
-
-int _display_bar (void) {
-  int size_x, size_y;
-  
-  getmaxyx(stdscr, size_y, size_x);
-  attron(A_REVERSE);
-
-  char* ver_splash = "Igor's Own Editor ---- v0.1 Alpha";
-
-  mvprintw(size_y-1, 0, ver_splash);
-
-  for (size_t i = strlen(ver_splash);i < size_x;i++) {
-    mvaddch(size_y-1, i, ' ');
-  }
-  
-  attroff(A_REVERSE);
-
   return SUCCESS;
 }
 

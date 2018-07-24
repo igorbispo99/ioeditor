@@ -1,6 +1,4 @@
-#include "gui.h"
-#include "file_manager.h"
-#include <stdio.h>
+#include "ui.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 2) {
@@ -10,6 +8,7 @@ int main(int argc, char* argv[]) {
 
   file_io io = file_io_;
   gui g = gui_;
+  bar b = bar_;
 
   file *f = (file*) malloc(sizeof(file));
   char *s = argv[1];  
