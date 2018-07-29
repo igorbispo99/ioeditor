@@ -95,9 +95,10 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
   // Go to EOF
   if (k == END_FILE) {
     size_t scroll_offset = (txt->num_of_lines-size_y) - txt_slc->from_y + 1;
-    _scroll_txt(scroll_offset, txt, txt_slc);
-
+    _scroll_txt(scroll_offset, txt, txt_slc); 
     _display_txt(txt, *txt_slc);
+
+    move(txt->num_of_lines > size_y ? size_y-2 : txt->num_of_lines-1, 0);
     refresh();
     return SUCCESS;     
   }
