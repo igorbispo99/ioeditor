@@ -92,6 +92,61 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
     return SUCCESS;      
   }
 
+  // Go to end of next line
+  if (k == NEXT_LINE) {
+    size_t current_line = txt_slc->from_y + cursor_y;
+    // Last line
+    if (current_line == txt->num_of_lines-1) return ERROR;
+
+    // Scroll case
+    if (cursor_y == size_y - 2) {
+      _scroll_txt(1, txt, txt_slc);
+      _display_txt(txt, *txt_slc);
+
+      move(cursor_y, strlen(txt->lines[current_line + 1]) - 1);
+      refresh();
+      return SUCCESS;
+    }
+
+    // Regular case
+    move(cursor_y+1, strlen(txt->lines[current_line + 1]) - 1);
+    refresh();
+    return SUCCESS;
+  }
+
+  // Go to end of next line
+  if (k == PREV_LINE) {
+    size_t current_line = txt_slc->from_y + cursor_y;
+    // First line
+    if (current_line == 0) return ERROR;
+
+    // Scroll case
+    if (cursor_y == 0) {
+      _scroll_txt(-1, txt, txt_slc);
+      _display_txt(txt, *txt_slc);
+
+      move(cursor_y, strlen(txt->lines[current_line - 1]) - 1);
+      refresh();
+      return SUCCESS;
+    }
+
+    // Regular case
+    move(cursor_y-1, strlen(txt->lines[current_line - 1]) - 1);
+    refresh();
+    return SUCCESS;
+  }
+
+  // Go to begin of file
+  if (k == BEGIN_FILE) {
+    size_t scroll_offset = -txt_slc->from_y;
+    _scroll_txt(scroll_offset, txt, txt_slc);
+    _display_txt(txt, *txt_slc);
+
+    move(0, 0);
+    refresh();
+    return SUCCESS;
+  }
+
   // Go to EOF
   if (k == END_FILE) {
     size_t scroll_offset = (txt->num_of_lines-size_y) - txt_slc->from_y + 1;
@@ -394,6 +449,12 @@ int _run (file* f) {
       _move_cursor(END_LINE, f->txt, &txt_slc);
     } else if (k == CTRL('t')) {
       _move_cursor(BEGIN_LINE, f->txt, &txt_slc);
+    } else if (k == CTRL('c')) {
+      _move_cursor(NEXT_LINE, f->txt, &txt_slc);
+    } else if (k == CTRL('x')) {
+      _move_cursor(PREV_LINE, f->txt, &txt_slc);
+    } else if (k ==  CTRL('[')) {
+      _move_cursor(BEGIN_FILE, f->txt, &txt_slc);
     } else if (k ==  CTRL(']')) {
       _move_cursor(END_FILE, f->txt, &txt_slc);
     
