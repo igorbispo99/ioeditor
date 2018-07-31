@@ -522,6 +522,97 @@ int _clean () {
   return SUCCESS;
 }
 
+int _change_to_select_mode (text* txt, text* txt_buffer, text_slice* txt_slc) {
+
+  // Destroy old txt_buffer
+  if (txt_buffer) _destroy_txt(txt_buffer);
+
+  int size_x, size_y;
+  int cursor_x, cursor_y;
+
+  getmaxyx(stdscr, size_y, size_x);
+  getyx(stdscr, cursor_y, cursor_x);
+
+  size_t current_line = cursor_y + txt_slc->from_y;
+  size_t line_size = strlen(txt->lines[current_line]);
+  size_t from_line;
+
+  // Select current line on screen
+  attron(A_REVERSE);
+  mvprintw(cursor_y, 0, txt->lines[current_line]);
+
+  int k = 0;
+  from_line = current_line;
+
+  while (k =! CTRL('u')) {
+    move(cursor_y, 0);
+    k = getch();
+
+    // TODO scroll case
+
+    if (k == KEY_UP || k == CTRL('x')) {
+      // "From" > "to" case not implemented (yet?)
+      if(current_line == from_line) continue; 
+
+      // Scroll case, not implemented yet
+      if(cursor_y == 0) continue;
+      
+      // Unselect current line on screen
+      attroff(A_REVERSE);
+      mvprintw(cursor_y, 0, txt->lines[current_line]);
+      attron(A_REVERSE);
+
+      current_line -= 1;
+      cursor_y -= 1;
+    } else if (k == KEY_DOWN || k == CTRL('c')) {
+      // Out of bounds
+      if (current_line == txt->num_of_lines-1) continue;
+
+      // Scroll case, not implemented yet
+      if (cursor_y == size_y-2) continue;
+
+      // Select current line screen
+      mvprintw(cursor_y+1, 0, txt->lines[current_line+1]);
+
+      current_line += 1;
+      cursor_y += 1;
+    }
+  }
+
+  // Initializing text buffer 
+  txt_buffer = calloc(1, sizeof(text));
+  if (!txt_buffer) return ERROR;
+
+  txt_buffer->lines = calloc(current_line - from_line + 1, sizeof(char*));
+  txt_buffer->num_of_lines = 0;
+  txt_buffer->initialized = true;
+
+  // Write on txt buffer
+  size_t curr_line_cpy = 0;
+  size_t current_line_size;
+  for (size_t i = from_line;i <= current_line;i++) {
+    current_line_size = strlen(txt->lines[i]);
+    txt_buffer->lines[curr_line_cpy] = calloc(current_line_size+1, sizeof(char));
+
+    strcpy(txt_buffer->lines[curr_line_cpy], txt->lines[i]);
+
+    txt_buffer->num_of_lines++;
+    curr_line_cpy++;
+  }
+
+  return SUCCESS;
+}
+
+int paste_from_txt(int line, text* txt, text* txt_buffer, text_slice* txt_slc) {
+  int current_line = line + txt_slc->from_y;
+
+  // TODO case paste in mid of line
+  if (strlen(txt->lines[current_line] != 1)) return; 
+
+  // Shift all lines after current line txt_buffer->num_of_lines-1 positions down
+  return SUCCESS;
+}
+
 // End of class gui
 
 // Misc functions

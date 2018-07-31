@@ -30,7 +30,7 @@ typedef struct text_slice {
 // Class gui
 #define gui_ {&_run, &_can_move_cursor,\
 &_move_cursor, &_write_at_cursor, &_display_txt,\
-&_scroll_txt, &_clean}
+&_scroll_txt, &_clean, &_change_to_select_mode}
 
 typedef struct gui gui;
 
@@ -42,6 +42,7 @@ struct gui {
   int (*display_txt) (text*, text_slice);
   int (*scroll_txt) (int, text*, text_slice*);
   int (*clean) (void);
+  int (*change_to_select_mode) (text*, text_slice*);
 };
 
 int _run(file*);
@@ -51,12 +52,14 @@ int _write_at_cursor(int, text*, text_slice*);
 int _display_txt(text*, text_slice);
 int _clean (void);
 int _scroll_txt(int, text*, text_slice*);
+int _change_to_select_mode(text*, text*, text_slice*);
 // End of class gui
 
 // Misc functions
 bool is_arrow(int);
 void swap_chr_ptr(char**, char**);
 void swap_chr(char* a, char* b);
+int paste_from_txt(int, text*, text*, text_slice*);
 
 // Operator functions
 typedef void (*op_func) (int* x, int* y);
