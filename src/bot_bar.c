@@ -1,13 +1,13 @@
 #include "bot_bar.h"
 
-int _init_bar (bar* b, file* f, text_slice *txt_slc) {
-  if (!b || !f || !txt_slc) return ERROR;
+int _init_bar (bar* b, file* f, text_slice* txt_slc_) {
+  if (!b || !f) return ERROR;
 
   b->splash_size = strlen(VER_SPLASH);
   b->filename_size = strlen(f->filename);
 
   b->bar_f = f;
-  b->txt_slc = txt_slc;
+  b->txt_slc = txt_slc_;
 
   return SUCCESS;
 }
@@ -36,10 +36,10 @@ int _display_lines_count(bar *b) {
 
   if (!b || !lines_count) return ERROR;
 
-  sprintf(lines_count, "%s | %d/%ld",
+  sprintf(lines_count, "%s | %ld/%ld",
   b->bar_f->filename, 
-  b->txt_slc->from_y+cursor_y+1,
-  b->bar_f->txt->num_of_lines);
+  b->txt_slc->current_line_num,
+  b->bar_f->txt_head->num_of_lines);
 
   // Update size lines_count
   b->lines_count_size = strlen(lines_count);
@@ -59,7 +59,7 @@ int _display_lines_count(bar *b) {
 
 int _display_bar(bar* b) {
   // Fill bar background with blank spaces
-  int size_x, size_y, blank_size;
+  int size_x, size_y;
   getmaxyx(stdscr, size_y, size_x);
 
   char* blank_line = calloc(size_x+1, sizeof(char));

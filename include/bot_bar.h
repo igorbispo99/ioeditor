@@ -5,7 +5,7 @@
 #include "gui.h"
 
 // Class bar
-#define bar_ {0, 0, 0, NULL, NULL, \
+#define bar_ {0, 0, 0, 0, NULL, NULL, \
 &_init_bar, &_display_splash, \
 &_display_lines_count, &_display_bar}
 
@@ -18,6 +18,7 @@ struct bar {
   size_t splash_size;
   size_t lines_count_size;
   size_t filename_size;
+  size_t current_line;
 
   file* bar_f;
   text_slice* txt_slc;

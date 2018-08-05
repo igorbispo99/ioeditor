@@ -8,7 +8,6 @@ int main(int argc, char* argv[]) {
 
   file_io io = file_io_;
   gui g = gui_;
-  bar b = bar_;
 
   file *f = (file*) malloc(sizeof(file));
   char *s = argv[1];  

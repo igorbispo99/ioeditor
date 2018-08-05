@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/main.out",
-      "args": ["abc"],
+      "args": ["../src/file_manager.c"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/bin",
       "environment": [],

@@ -14,16 +14,28 @@ enum SIGNAL {
   ERROR
 };
 
-//Class text
-typedef struct text {
-  char** lines;
+//Class text (linked list)
+typedef struct text_head text_head;
+typedef struct text text;
+
+struct text_head {
+  text* first_line;
   size_t num_of_lines;
+  size_t current_line;
   bool initialized;
-} text;
+};
+
+struct text {
+  text* next_line;
+  text* prev_line;
+  char* content;
+};
+
+text* new_txt_cell(char*);
 
 //Class file
 typedef struct file {
-  text* txt;
+  text_head* txt_head;
   FILE* current_file;
   bool initialized;
   char* filename;
@@ -37,15 +49,17 @@ typedef struct file_io file_io;
 struct file_io {
   int (*show_txt) (file*);
   int (*load_txt) (file*, char*);
-  int (*destroy_txt) (text*);
+  int (*destroy_txt) (text_head*);
   int (*destroy_file) (file*);
   int (*write_file) (file*, char*);
 };
 
 int _show_txt(file*);
 int _load_txt(file*, char*);
-int _destroy_txt (text*);
+int _destroy_txt (text_head*);
 int _destroy_file(file*);
 int _write_file(file*, char*);
+
+
 
 #endif

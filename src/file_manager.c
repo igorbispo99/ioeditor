@@ -1,38 +1,56 @@
 #include "file_manager.h"
 
+// Class text
+text* new_txt_cell(char* txt_content) {
+  text* new_cell = calloc(1, sizeof(text));
+
+  new_cell->next_line = NULL;
+  new_cell->prev_line = NULL;
+  new_cell->content = calloc(strlen(txt_content)+1, sizeof(char));
+  strcpy(new_cell->content, txt_content);
+
+  return new_cell;
+}
+
 // Class file_io
 int _show_txt(file* f) {
-  for (size_t i = 0;i < f->txt->num_of_lines;i++) {
-    puts(f->txt->lines[i]);
+  text* txt_crawler = f->txt_head->first_line;
+
+  while(txt_crawler) {
+    puts(txt_crawler->content);
+    txt_crawler = txt_crawler->next_line;
   }
+
   return SUCCESS;
 }
 
 int _load_txt(file* f, char* filename) {
-
-  // Initializing text
+  // Initializing text_head
   // TODO Code refactoring
-  f->txt = (text*) calloc(1, sizeof(text));
-  f->txt->lines = (char**) malloc(sizeof(char*));
-  f->txt->num_of_lines = 0;
+  f->txt_head = (text_head*) calloc(1, sizeof(text_head));
+  f->txt_head->first_line = NULL;
+  f->txt_head->num_of_lines = 0;
+  f->txt_head->initialized = false;
 
   // Initializing file
   f->current_file = fopen(filename, "r");
-  f->filename = filename;
+  f->filename = calloc(256, sizeof(char));
+  strcpy(f->filename, filename);
   
   // File dont exists
   if (!f->current_file) {
     f->current_file = fopen(filename, "w+");
     
     if(!f->current_file) {
-      _destroy_txt(f->txt);
+      _destroy_txt(f->txt_head);
       return ERROR;
     }
 
-    f->txt->num_of_lines = 1;
-    f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(2));
-    f->txt->lines[0] = calloc(2, sizeof(char));
-    f->txt->initialized = true;
+    f->txt_head->first_line = new_txt_cell(" ");
+    f->txt_head->current_line = 0;
+    f->txt_head->num_of_lines = 1;
+
+    f->txt_head->initialized = true;
 
     f->initialized = true;
     return SUCCESS;
@@ -44,81 +62,89 @@ int _load_txt(file* f, char* filename) {
   char* line_buffer = NULL;
 
   size_t char_num_dump = 0;
-  size_t* l_num = &f->txt->num_of_lines;
   size_t line_size = 0;
 
-  while((line_size = getline(&line_buffer,
-        &char_num_dump, f->current_file)) != -1) {
-
-    f->txt->lines[*l_num] = calloc(sizeof(char), line_size + 1);
-    memcpy(f->txt->lines[*l_num], line_buffer, line_size);
-
-    *l_num = *l_num + 1;
-    f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
-  }
-
   // Case when the file only contains the '\0'
-  if (*l_num == 0) {
-    f->txt->num_of_lines = 1;
-    f->txt->lines = realloc(f->txt->lines, sizeof(char*)*(*l_num + 1));
-    f->txt->lines[0] = calloc(2, sizeof(char));
+  if (getline(&line_buffer, &char_num_dump, f->current_file) == -1) {
+    f->txt_head->num_of_lines = 1;
+    f->txt_head->first_line  = new_txt_cell(" ");
+
+  } else {
+    f->txt_head->num_of_lines = 1;
+    f->txt_head->first_line = new_txt_cell(line_buffer);
+    f->txt_head->current_line = 0;
+    
+    text* prev_txt = f->txt_head->first_line;
+    text* new_cell = NULL;
+    text** prev_next_addr = &(prev_txt->next_line);
+
+    while((line_size = getline(&line_buffer,
+          &char_num_dump, f->current_file)) != -1) {
+      
+      new_cell = new_txt_cell(line_buffer);
+      new_cell->prev_line = prev_txt;
+      *prev_next_addr = new_cell;    
+
+      prev_txt = new_cell;
+      prev_next_addr = &(prev_txt->next_line);
+
+      f->txt_head->num_of_lines += 1;
+    }
   }
 
-  f->txt->initialized = true;
+  f->txt_head->initialized = true;
   free(line_buffer);
   return SUCCESS;
 }
 
-int _destroy_txt(text* txt) {
-  for (size_t i = 0; i < txt->num_of_lines; i++) {
-    free(txt->lines[i]);
-  }
-  free(txt->lines);
-  free(txt);
+int _destroy_txt(text_head* txt_head) {
+  if (!txt_head) return SUCCESS;
 
+  text* txt_crawler = txt_head->first_line;
+  text* aux_txt;
+
+  while (txt_crawler) {
+    aux_txt = txt_crawler->next_line;
+    free(txt_crawler->content);
+    free(txt_crawler);
+
+    txt_crawler = aux_txt;
+  }
+
+  free(txt_head);
   return SUCCESS;
 }
 
 int _destroy_file(file* f) {
   if (f) {
-    if (f->txt) {
-      _destroy_txt(f->txt);
-    }
+    _destroy_txt(f->txt_head);
     fclose(f->current_file);
+    free(f->filename);
     free(f);
   }
   return SUCCESS;
 }
 
 int _write_file(file* f, char* filename) {
-  // For now, the original file will not be replace
   FILE* out_file;
 
-  char* out_file_name = filename;
-  // char* out_file_name = calloc(256, sizeof(char));
-  // if (!out_file_name){
-  //   return ERROR;
-  // }
-  // strcpy(out_file_name, strcat(f->filename, ".out"));
-
-  out_file = fopen(out_file_name, "w+");
-  if (!out_file) {
-    //free(out_file_name);
-    return ERROR;
-  }
+  out_file = fopen(filename, "w+");
+  if (!out_file) return ERROR;
 
   size_t len_line;
+  text* txt_crawler = f->txt_head->first_line;
 
-  for (size_t i = 0; i < f->txt->num_of_lines; i++) {
-    len_line = strlen(f->txt->lines[i]);
-    // TODO Refactorize code
-    if (f->txt->lines[i][len_line-1] == '\n')
-      fprintf(out_file, "%s", f->txt->lines[i]);
+  while (txt_crawler) {
+    len_line = strlen(txt_crawler->content);
+
+    if (txt_crawler->content[len_line-1] == '\n')
+      fprintf(out_file, "%s", txt_crawler->content);
     else
-      fprintf(out_file, "%s\n", f->txt->lines[i]);
+      fprintf(out_file, "%s", txt_crawler->content);
+    
+    txt_crawler = txt_crawler->next_line;
   }
 
   fclose(out_file);
-  //free(out_file_name);
   return SUCCESS;
 }
