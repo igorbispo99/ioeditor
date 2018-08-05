@@ -6,7 +6,7 @@ text* new_txt_cell(char* txt_content) {
 
   new_cell->next_line = NULL;
   new_cell->prev_line = NULL;
-ststst  new_cell->content = calloc(strlen(txt_content)+1, sizeof(char));
+  new_cell->content = calloc(strlen(txt_content)+1, sizeof(char));
   strcpy(new_cell->content, txt_content);
 
   return new_cell;
@@ -90,6 +90,7 @@ int _load_txt(file* f, char* filename) {
 
       f->txt_head->num_of_lines += 1;
     }
+    f->txt_head->last_line = new_cell;
   }
 
   f->txt_head->initialized = true;

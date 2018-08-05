@@ -268,7 +268,9 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
         aux_cell_ptr = txt_slc->current_line_ptr->next_line;
 
         txt_slc->current_line_ptr->next_line = txt_slc->current_line_ptr->next_line->next_line;
-        txt_slc->current_line_ptr->next_line->prev_line = txt_slc->current_line_ptr;
+
+        if (txt_slc->current_line_ptr->next_line)
+          txt_slc->current_line_ptr->next_line->prev_line = txt_slc->current_line_ptr;
 
         free(aux_cell_ptr);
 
@@ -499,6 +501,7 @@ int _run (file* f) {
 
   int k;
   text_head* cpy_buffer = NULL;
+  bool buffer_exists = false;
 
   while (1) {
     k = getch();
@@ -520,8 +523,19 @@ int _run (file* f) {
     } else if (k == CTRL(']')) {
       _move_cursor(END_FILE, f->txt_head, txt_slc);
     } else if (k == CTRL('u')) {
-      _change_to_select_mode(txt_slc, cpy_buffer);
-    
+    // Clean old buffer if exists
+    if (buffer_exists) free(cpy_buffer);
+
+    cpy_buffer = _change_to_select_mode(txt_slc);
+    buffer_exists = true;
+
+    } else if (k == CTRL('y')) {
+    if (cpy_buffer && buffer_exists) {
+      paste_from_txt(f->txt_head, txt_slc, cpy_buffer);
+
+      free(cpy_buffer);
+      buffer_exists = false;
+    }
     // Insertion cases
     } else {
       if (is_arrow(k)) { 
@@ -536,7 +550,7 @@ int _run (file* f) {
     b.display_lines_count(&b);
   }
 
-  _destroy_txt(cpy_buffer);
+  //_destroy_txt(cpy_buffer);
   free(txt_slc);
 
   attron(A_REVERSE);
@@ -601,12 +615,13 @@ int _clean () {
   return SUCCESS;
 }
 
-int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
+text_head* _change_to_select_mode (text_slice* txt_slc) {
 
-  // Destroy old txt_buffer and create a new one
-  if (txt_buffer) _destroy_txt(txt_buffer);
+  // Create new txt_buffer
+  text_head* txt_buffer = calloc(1, sizeof(text_head));
 
-  txt_buffer = calloc(1, sizeof(text_head));
+  if (!txt_buffer) return NULL;
+
   txt_buffer->current_line = 0;
   txt_buffer->num_of_lines = 1;
   txt_buffer->initialized = true;
@@ -624,7 +639,7 @@ int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
   if (cursor_y != size_y-2) move(cursor_y+1, 0);
 
   int k = 0;
-  size_t lines_offset = 0;
+  size_t lines_offset = 1;
   text* current_line_cpy = txt_slc->current_line_ptr;
 
   while (k != CTRL('u')) {
@@ -635,7 +650,7 @@ int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
 
     if (k == KEY_UP || k == CTRL('x')) {
       // "From" > "to" case not implemented (yet?)
-      if(!lines_offset) continue; 
+      if(lines_offset == 1) continue; 
 
       // Scroll case, not implemented yet
       if(cursor_y == 0) continue;
@@ -649,8 +664,11 @@ int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
       attron(A_REVERSE);
 
       txt_slc->current_line_ptr = txt_slc->current_line_ptr->prev_line;
+      txt_slc->current_line_num -= 1;
+
       txt_buffer->current_line -= 1;
       txt_buffer->num_of_lines -= 1;
+
       cursor_y -= 1;
       lines_offset -= 1;
     } else if (k == KEY_DOWN || k == CTRL('c')) {
@@ -664,17 +682,23 @@ int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
       mvprintw(cursor_y+1, 0, txt_slc->current_line_ptr->next_line->content);
 
       txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+      txt_slc->current_line_num += 1;
+
       txt_buffer->current_line += 1;
+      txt_buffer->num_of_lines += 1;
+
       cursor_y += 1;
       lines_offset += 1;
     }
   }
 
   // Write on txt buffer
-  txt_buffer->first_line = new_txt_cell(current_line_cpy->content);
+  text* first_cell = new_txt_cell(current_line_cpy->content);
+
+  txt_buffer->first_line = first_cell;
 
   text* prev_txt = txt_buffer->first_line;
-  text* new_cell = NULL;
+  text* new_cell = first_cell;
   text** prev_next_addr = &(prev_txt->next_line);
 
   for(size_t i = 1;i < lines_offset;i++) {
@@ -688,12 +712,31 @@ int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
     prev_next_addr = &(prev_txt->next_line);
   }
 
-  return SUCCESS;
+  txt_buffer->last_line = new_cell;
+
+  return txt_buffer;
 }
 
-int paste_from_txt(int line, text* txt, text_head* txt_buffer) {
+int paste_from_txt(text_head* head, text_slice* txt_slc , text_head* txt_buffer) {
+  int cursor_x, cursor_y;
+  getyx(stdscr, cursor_y, cursor_x);
 
-  // Shift all lines after current line txt_buffer->num_of_lines-1 positions down
+  // Concatenate txt_buffer with txt at current line
+  txt_buffer->first_line->prev_line = txt_slc->current_line_ptr;
+  txt_buffer->last_line->next_line = txt_slc->current_line_ptr->next_line;
+  
+  text* txt_aux = txt_slc->current_line_ptr->next_line;
+
+  txt_slc->current_line_ptr->next_line = txt_buffer->first_line;
+  txt_aux->prev_line = txt_buffer->last_line;
+
+  // Update num of lines
+  head->num_of_lines += txt_buffer->num_of_lines;
+
+  // Update screen buffer
+  _display_txt(txt_slc->first_scr_line);
+  move(cursor_y, cursor_x);
+
   return SUCCESS;
 }
 

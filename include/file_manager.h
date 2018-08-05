@@ -20,6 +20,7 @@ typedef struct text text;
 
 struct text_head {
   text* first_line;
+  text* last_line;
   size_t num_of_lines;
   size_t current_line;
   bool initialized;

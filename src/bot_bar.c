@@ -30,6 +30,8 @@ int _display_splash(bar *b) {
 }
 
 int _display_lines_count(bar *b) {
+  if (!b) return ERROR;
+
   int size_x, size_y;
   int cursor_x, cursor_y;
 
@@ -39,7 +41,7 @@ int _display_lines_count(bar *b) {
 
   char* lines_count = calloc(128, sizeof(char));
 
-  if (!b || !lines_count) return ERROR;
+  if (!lines_count) return ERROR;
 
   sprintf(lines_count, "%s | %ld/%ld",
   b->bar_f->filename, 

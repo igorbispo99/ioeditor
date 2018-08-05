@@ -44,7 +44,7 @@ struct gui {
   int (*display_txt) (text*);
   text* (*scroll_txt) (int, text*);
   int (*clean) (void);
-  int (*change_to_select_mode) (text_slice*, text_head*);
+  text_head* (*change_to_select_mode) (text_slice*);
 };
 
 int _run(file*);
@@ -54,14 +54,14 @@ int _write_at_cursor(int, text_head*, text_slice*);
 int _display_txt(text*);
 int _clean (void);
 text* _scroll_txt(int, text*);
-int _change_to_select_mode(text_slice*, text_head*);
+text_head* _change_to_select_mode(text_slice*);
 // End of class gui
 
 // Misc functions
 bool is_arrow(int);
 void swap_chr_ptr(char**, char**);
 void swap_chr(char* a, char* b);
-int paste_from_txt(int, text*, text_head*);
+int paste_from_txt(text_head*, text_slice*, text_head*);
 
 // Operator functions
 typedef void (*op_func) (int* x, int* y);
