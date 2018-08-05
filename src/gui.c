@@ -165,14 +165,21 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
   }
 
   // Go to EOF
-  // TODO Implement go to EOF
   if (k == END_FILE) {
-    // size_t scroll_offset = (txt->num_of_lines-size_y) - txt_slc->from_y + 1;
-    // _scroll_txt(scroll_offset, txt, txt_slc); 
-    // _display_txt(txt, *txt_slc);
+    txt_slc->current_line_ptr = head->last_line;
+    txt_slc->current_line_num = head->num_of_lines - 1;
 
-    // move(txt->num_of_lines > size_y ? size_y-2 : txt->num_of_lines-1, 0);
-    // refresh();
+    // Calculating new first_scr_line
+    txt_slc->first_scr_line = head->last_line;
+    size_t scroll_offset = size_y - 2;
+
+    text* new_first = _scroll_txt(-scroll_offset, txt_slc->first_scr_line);
+    txt_slc->first_scr_line = new_first;
+
+    _display_txt(txt_slc->first_scr_line);
+
+    move(head->num_of_lines > size_y ? size_y-2 : head->num_of_lines-1, 0);
+    refresh();
     return SUCCESS;     
   }
 
@@ -368,6 +375,35 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
         new_x = cursor_x-1;
         new_y = cursor_y;     
       }
+
+      break;
+
+    // Case TAB (ident line)
+    case '\t':
+    case KEY_STAB:
+      // For now, 1 tab = 2 spaces
+
+      // Increase size of line
+      txt_slc->current_line_ptr->content = realloc(txt_slc->current_line_ptr->content, line_size+3);
+      txt_slc->current_line_ptr->content[line_size] = '\0';
+      txt_slc->current_line_ptr->content[line_size+1] = '\0';
+
+
+      // Shift elements
+      memmove(&(txt_slc->current_line_ptr->content[cursor_x+2]),
+        &(txt_slc->current_line_ptr->content[cursor_x]),
+        line_size - cursor_x+1);
+
+      // Insert 2 spaces
+      txt_slc->current_line_ptr->content[cursor_x] = ' ';
+      txt_slc->current_line_ptr->content[cursor_x+1] = ' ';
+
+      new_x = cursor_x+2;
+      new_y = cursor_y;
+
+      // Updating line screen buffer
+      clrtoeol();
+      mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);      
 
       break;
 
