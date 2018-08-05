@@ -6,7 +6,7 @@ text* new_txt_cell(char* txt_content) {
 
   new_cell->next_line = NULL;
   new_cell->prev_line = NULL;
-  new_cell->content = calloc(strlen(txt_content)+1, sizeof(char));
+ststst  new_cell->content = calloc(strlen(txt_content)+1, sizeof(char));
   strcpy(new_cell->content, txt_content);
 
   return new_cell;

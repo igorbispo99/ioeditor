@@ -44,7 +44,7 @@ struct gui {
   int (*display_txt) (text*);
   text* (*scroll_txt) (int, text*);
   int (*clean) (void);
-  int (*change_to_select_mode) (text*, text_head*);
+  int (*change_to_select_mode) (text_slice*, text_head*);
 };
 
 int _run(file*);
@@ -54,7 +54,7 @@ int _write_at_cursor(int, text_head*, text_slice*);
 int _display_txt(text*);
 int _clean (void);
 text* _scroll_txt(int, text*);
-int _change_to_select_mode(text*, text_head*);
+int _change_to_select_mode(text_slice*, text_head*);
 // End of class gui
 
 // Misc functions

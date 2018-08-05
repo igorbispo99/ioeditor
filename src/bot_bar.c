@@ -1,5 +1,10 @@
 #include "bot_bar.h"
 
+int _destroy_bar (bar* b) {
+  free(b);
+  return SUCCESS;
+}
+
 int _init_bar (bar* b, file* f, text_slice* txt_slc_) {
   if (!b || !f) return ERROR;
 
@@ -70,6 +75,8 @@ int _display_bar(bar* b) {
   attron(A_REVERSE);
   mvaddstr(size_y-1, 0, blank_line);
   attroff(A_REVERSE);
+
+  free(blank_line);
 
   _display_splash(b);
   _display_lines_count(b);

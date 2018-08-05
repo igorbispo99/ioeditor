@@ -7,7 +7,8 @@
 // Class bar
 #define bar_ {0, 0, 0, 0, NULL, NULL, \
 &_init_bar, &_display_splash, \
-&_display_lines_count, &_display_bar}
+&_display_lines_count, &_display_bar, \
+&_destroy_bar}
 
 #define VER_SPLASH "Igor's Own Editor v0.1"
 
@@ -28,11 +29,13 @@ struct bar {
   int (*display_splash) (bar*);
   int (*display_lines_count) (bar*);
   int (*display_bar) (bar*);
+  int (*destroy_bar) (bar*);
 };
 
 int _init_bar (bar*, file*, text_slice*);
 int _display_splash(bar* b);
 int _display_lines_count(bar *b);
 int _display_bar(bar *b);
+int _destroy_bar(bar *b);
 
 #endif

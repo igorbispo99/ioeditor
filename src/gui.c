@@ -386,7 +386,10 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
       aux_cell_ptr->prev_line = txt_slc->current_line_ptr;
 
       aux_cell_ptr->next_line = aux_cell_ptr_;
-      aux_cell_ptr_->prev_line = aux_cell_ptr;
+
+      // Last line corner case
+      if (aux_cell_ptr_)
+        aux_cell_ptr_->prev_line = aux_cell_ptr;
 
       // Increase num of lines
       head->num_of_lines += 1;
@@ -517,7 +520,7 @@ int _run (file* f) {
     } else if (k == CTRL(']')) {
       _move_cursor(END_FILE, f->txt_head, txt_slc);
     } else if (k == CTRL('u')) {
-      _change_to_select_mode(txt_slc->current_line_ptr, cpy_buffer);
+      _change_to_select_mode(txt_slc, cpy_buffer);
     
     // Insertion cases
     } else {
@@ -532,6 +535,9 @@ int _run (file* f) {
     usleep(250);
     b.display_lines_count(&b);
   }
+
+  _destroy_txt(cpy_buffer);
+  free(txt_slc);
 
   attron(A_REVERSE);
   mvprintw(size_y-1, 0, "Salvar o buffer modificado? (s/N) => ");
@@ -595,7 +601,7 @@ int _clean () {
   return SUCCESS;
 }
 
-int _change_to_select_mode (text* current_line, text_head* txt_buffer) {
+int _change_to_select_mode (text_slice* txt_slc, text_head* txt_buffer) {
 
   // Destroy old txt_buffer and create a new one
   if (txt_buffer) _destroy_txt(txt_buffer);
@@ -613,13 +619,13 @@ int _change_to_select_mode (text* current_line, text_head* txt_buffer) {
 
   // Select current line on screen
   attron(A_REVERSE);
-  mvprintw(cursor_y, 0, current_line->content);
+  mvprintw(cursor_y, 0, txt_slc->current_line_ptr->content);
 
   if (cursor_y != size_y-2) move(cursor_y+1, 0);
 
   int k = 0;
   size_t lines_offset = 0;
-  text* current_line_cpy = current_line;
+  text* current_line_cpy = txt_slc->current_line_ptr;
 
   while (k != CTRL('u')) {
     move(cursor_y, 0);
@@ -635,30 +641,32 @@ int _change_to_select_mode (text* current_line, text_head* txt_buffer) {
       if(cursor_y == 0) continue;
 
       // Out of bounds
-      if(!current_line->prev_line) continue;
+      if(!txt_slc->current_line_ptr->prev_line) continue;
       
       // Unselect current line on screen
       attroff(A_REVERSE);
-      mvprintw(cursor_y, 0, current_line->content);
+      mvprintw(cursor_y, 0, txt_slc->current_line_ptr->content);
       attron(A_REVERSE);
 
-      current_line = current_line->prev_line;
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->prev_line;
       txt_buffer->current_line -= 1;
       txt_buffer->num_of_lines -= 1;
       cursor_y -= 1;
+      lines_offset -= 1;
     } else if (k == KEY_DOWN || k == CTRL('c')) {
       // Out of bounds
-      if (!current_line->next_line) continue;
+      if (!txt_slc->current_line_ptr->next_line) continue;
 
       // Scroll case, not implemented yet
       if (cursor_y == size_y-2) continue;
 
       // Select next line on screen
-      mvprintw(cursor_y+1, 0, current_line->next_line->content);
+      mvprintw(cursor_y+1, 0, txt_slc->current_line_ptr->next_line->content);
 
-      current_line = current_line->next_line;
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
       txt_buffer->current_line += 1;
       cursor_y += 1;
+      lines_offset += 1;
     }
   }
 
