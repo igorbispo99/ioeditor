@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Igors Own Editor], [0.1], [])
+AC_INIT([IgorsOwnEditor], [0.2], [igor.rabbit99@gmail.com])
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
@@ -27,7 +27,7 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset setlocale])
+AC_CHECK_FUNCS([memmove memset setlocale])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

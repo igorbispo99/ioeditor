@@ -26,8 +26,7 @@ op_func eval_arrow(int k) {
   }
 }
 
-bool _can_move_cursor (int k, text* txt,
-    text_slice txt_slc) {
+bool _can_move_cursor (int k, text* txt) {
   int cursor_x, next_x;
   int cursor_y, next_y;
 
@@ -36,34 +35,43 @@ bool _can_move_cursor (int k, text* txt,
   next_x = cursor_x;
   next_y = cursor_y;
 
-  //Getting current screen size
-  int screen_x, screen_y;
-  getmaxyx(stdscr, screen_y, screen_x);
-
   // Evaluating operator function
   op_func op = eval_arrow(k);
   op(&next_x, &next_y);
 
+  // Evaluating cursor movement
+
   // TODO Case when txt is larger than screen x size
+  if (next_x < 0) return false;
 
-  /* --------- Testing y_coord --------- */
-  if ((next_y < 0 && txt_slc.from_y == 0) || (cursor_y > (txt_slc.from_y+screen_y)+2)) {
-    return false;
-  }
+  // Cursor go to next line case
+  if (next_y > cursor_y) {
+    // Current Line is the last line
+    if (!txt->next_line)
+      return false;
+    // Next line is smaller than target x
+    if (next_x > strlen(txt->next_line->content) - 1)
+      return false;
+  
+  // Cursor go to previous line
+  } else if (next_y < cursor_y) {
+    // Current line is the first line
+    if (!txt->prev_line)
+      return false;
+    // Previous line is smaller than target x
+    if (next_x > strlen(txt->prev_line->content) - 1)
+      return false;
 
-  if (next_y + txt_slc.from_y >= txt->num_of_lines) {
-    return false;
-  }
-
-  /* --------- Testing x_coord --------- */
-  if (next_x < 0 || next_x > strlen(txt->lines[txt_slc.from_y + next_y])-1) {
-    return false;
+  // Cursor stays at the same line
+  } else {
+    if (next_x > strlen(txt->content) - 1)
+      return false;
   }
 
   return true;
 }
 
-int _move_cursor (int k, text* txt, text_slice* txt_slc) {
+int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
   int cursor_x, new_x, size_x;
   int cursor_y, new_y, size_y;
   bool scroll = false;
@@ -75,10 +83,7 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
 
   // End of line
   if (k == END_LINE) {
-    size_t end_of_line_pos;
-    end_of_line_pos = strlen(txt->lines[txt_slc->from_y+cursor_y]);
-
-    move(cursor_y, end_of_line_pos-1);
+    move(cursor_y, strlen(txt_slc->current_line_ptr->content)-1);
 
     refresh();
     return SUCCESS;   
@@ -92,18 +97,93 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
     return SUCCESS;      
   }
 
+  // Go to end of next line 
+  if (k == NEXT_LINE) {
+    // Last linext
+    if (!txt_slc->current_line_ptr->next_line) return ERROR;
+    txt_slc->current_line_num += 1;
+
+    // Scroll case
+    if (cursor_y == size_y - 2) {
+      text* new_first = _scroll_txt(1, txt_slc->first_scr_line);
+      _display_txt(new_first);
+      txt_slc->first_scr_line = new_first;
+
+      move(cursor_y, strlen(txt_slc->current_line_ptr->next_line->content) - 1);
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+
+      refresh();
+      return SUCCESS;
+    }
+
+    // Regular case
+    move(cursor_y+1, strlen(txt_slc->current_line_ptr->next_line->content) - 1);
+    txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+
+    refresh();
+    return SUCCESS;
+  }
+
+  // Go to end of prev line
+  if (k == PREV_LINE) {
+    // First line
+    if (!txt_slc->current_line_ptr->prev_line) return ERROR;
+    txt_slc->current_line_num -= 1;
+
+    // Scroll case
+    if (cursor_y == 0) {
+      text* new_first = _scroll_txt(-1, txt_slc->first_scr_line);
+      _display_txt(new_first);
+      txt_slc->first_scr_line = new_first;
+
+      move(cursor_y, strlen(txt_slc->current_line_ptr->prev_line->content) - 1);
+      txt_slc->current_line_ptr = (txt_slc->current_line_ptr->prev_line);
+
+      refresh();
+      return SUCCESS;
+    }
+
+    // Regular case
+    move(cursor_y-1, strlen(txt_slc->current_line_ptr->prev_line->content) - 1);
+    txt_slc->current_line_ptr = (txt_slc->current_line_ptr->prev_line);
+
+    refresh();
+    return SUCCESS;
+  }
+
+  // Go to begin of file
+  if (k == BEGIN_FILE) {
+    _display_txt(head->first_line);
+
+    txt_slc->current_line_num = 0;
+    txt_slc->current_line_ptr = head->first_line;
+    txt_slc->first_scr_line = head->first_line;
+
+    move(0, 0);
+    refresh();
+    return SUCCESS;
+  }
+
   // Go to EOF
   if (k == END_FILE) {
-    size_t scroll_offset = (txt->num_of_lines-size_y) - txt_slc->from_y + 1;
-    _scroll_txt(scroll_offset, txt, txt_slc);
+    txt_slc->current_line_ptr = head->last_line;
+    txt_slc->current_line_num = head->num_of_lines - 1;
 
-    _display_txt(txt, *txt_slc);
+    // Calculating new first_scr_line
+    txt_slc->first_scr_line = head->last_line;
+    size_t scroll_offset = size_y - 2;
+
+    text* new_first = _scroll_txt(-scroll_offset, txt_slc->first_scr_line);
+    txt_slc->first_scr_line = new_first;
+
+    _display_txt(txt_slc->first_scr_line);
+
+    move(head->num_of_lines > size_y ? size_y-2 : head->num_of_lines-1, 0);
     refresh();
     return SUCCESS;     
   }
 
   // End of command options
-
   op_func op = eval_arrow(k);
   new_x = cursor_x;
   new_y = cursor_y;   
@@ -114,19 +194,29 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case when cursor mov causes an scroll in txt
     // TODO Refactorize scroll handling
 
-    if (new_y == size_y-1) {
-      if (k == KEY_DOWN) {
-        _scroll_txt(1, txt, txt_slc);
-        _display_txt(txt, *txt_slc);
+    if (k == KEY_DOWN) {
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+      txt_slc->current_line_num += 1;
+
+      if (new_y == size_y-1) {
+        text* new_first = _scroll_txt(1, txt_slc->first_scr_line);
+        _display_txt(new_first);
+        txt_slc->first_scr_line = new_first;
+
         scroll = true;
       }
-    } else if (new_y == -1) {
-      if (k == KEY_UP) {
-        _scroll_txt(-1, txt, txt_slc);   
-        _display_txt(txt, *txt_slc);
-        scroll = true;
+    } else if (k == KEY_UP) {
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->prev_line;
+      txt_slc->current_line_num -= 1;
+
+      if (new_y == -1) {
+        text* new_first = _scroll_txt(-1, txt_slc->first_scr_line);   
+        _display_txt(new_first);
+        txt_slc->first_scr_line = new_first;
+
+        scroll = true;        
       }
-    } 
+    }
 
     if (!scroll) {
       move(new_y, new_x);
@@ -142,7 +232,7 @@ int _move_cursor (int k, text* txt, text_slice* txt_slc) {
   }
 }
 
-int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
+int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
   int cursor_x, new_x;
   int cursor_y, new_y;
   int size_x, size_y;
@@ -151,11 +241,11 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
   getmaxyx(stdscr, size_y, size_x);
 
   // Auxiliary vars
-  size_t current_line = txt_slc->from_y + cursor_y;
-  size_t line_size = strlen(txt->lines[current_line]);
+  size_t line_size = strlen(txt_slc->current_line_ptr->content);
 
-  // Aux line
-  char* new_line = NULL;
+  //text aux_cell;
+  text* aux_cell_ptr = NULL;
+  text* aux_cell_ptr_ = NULL;
 
   // TODO Refactorize screen buffer handling
 
@@ -166,40 +256,47 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
 
       // Case when char removal causes line colapse
       if (cursor_x == line_size - 1) {
-        if (current_line == txt->num_of_lines-1 ) {
+
+        // TODO Implement last char removal
+        // Delete last line (workaround)
+        if (!txt_slc->current_line_ptr->next_line) {
           new_x = cursor_x;
           new_y = cursor_y;
           break;
         } 
-        // Realloc current line
-        size_t next_line_size = strlen(txt->lines[current_line+1]);
-        txt->lines[current_line] = realloc(txt->lines[current_line], line_size + next_line_size);
 
-        // Create concatenate current line with next line
-        strcpy(txt->lines[current_line]+line_size-1, txt->lines[current_line+1]);
+        // Increase current line size
+        size_t next_line_size = strlen(txt_slc->current_line_ptr->next_line->content);
+        txt_slc->current_line_ptr->content = realloc(txt_slc->current_line_ptr->content, line_size + next_line_size);
 
-        // Move all lines after current line 1 position up
-        for (size_t i = current_line + 1;i < txt->num_of_lines-1;i++) {
-          txt->lines[i] = txt->lines[i+1];
-        }
+        // Concatenate current line with next line
+        strcpy(txt_slc->current_line_ptr->content + line_size-1, txt_slc->current_line_ptr->next_line->content);
+        // Remove next line cell
+        aux_cell_ptr = txt_slc->current_line_ptr->next_line;
 
-        // Realloc lines array
-        txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
+        txt_slc->current_line_ptr->next_line = txt_slc->current_line_ptr->next_line->next_line;
 
-        txt->num_of_lines -= 1;
+        if (txt_slc->current_line_ptr->next_line)
+          txt_slc->current_line_ptr->next_line->prev_line = txt_slc->current_line_ptr;
+
+        free(aux_cell_ptr);
+
+        head->num_of_lines -= 1;
 
         //Writing on screen buffer
-        if (_display_txt(txt, *txt_slc) == ERROR) {
+        if (_display_txt(txt_slc->first_scr_line) == ERROR) {
          return ERROR;
         }
 
+      // Regular char deletion
       } else {
-        for (size_t i = cursor_x;i < line_size;i++) {
-          txt->lines[current_line][i] = txt->lines[current_line][i+1];
-        }
-        txt->lines[current_line][line_size] = '\0';
+        memmove(&(txt_slc->current_line_ptr->content[cursor_x]), 
+                &(txt_slc->current_line_ptr->content[cursor_x+1]),
+                line_size - cursor_x);
 
-         // Write at screen buffer
+        txt_slc->current_line_ptr->content[line_size-1] = '\0';
+
+        // Write at screen buffer
         delch();
       }
 
@@ -211,7 +308,7 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case BACKSPACE
     case 127:
     case KEY_BACKSPACE:
-      if (current_line == 0 && cursor_x == 0) {
+      if (txt_slc->current_line_num == 0 && cursor_x == 0) {
         new_x = cursor_x;
         new_y = cursor_y;
         break;
@@ -220,38 +317,60 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
       // Case when char removal causes line colapse
       if (cursor_x == 0) {
         // Realloc previous line
-        size_t prev_line_size = strlen(txt->lines[current_line-1]);
-        txt->lines[current_line-1] = realloc(txt->lines[current_line-1],
-                                    line_size + prev_line_size);
+        size_t prev_line_size = strlen(txt_slc->current_line_ptr->prev_line->content);
+
+        txt_slc->current_line_ptr->prev_line->content = realloc(
+          txt_slc->current_line_ptr->prev_line->content,
+          line_size + prev_line_size + 1);
 
         // Create concatenate previous line with current line
-        strcpy(txt->lines[current_line-1]+prev_line_size-1, txt->lines[current_line]);
+        strcpy(txt_slc->current_line_ptr->prev_line->content + prev_line_size-1,
+          txt_slc->current_line_ptr->content);
 
-        // Move all lines after current line 1 position up
-        for (size_t i = current_line;i < txt->num_of_lines-1;i++) {
-          txt->lines[i] = txt->lines[i+1];
+        // Remove current line cell
+        aux_cell_ptr = txt_slc->current_line_ptr->next_line; // It will be used later
+        aux_cell_ptr_ = txt_slc->current_line_ptr->prev_line; // ''
+
+        txt_slc->current_line_ptr->prev_line->next_line = txt_slc->current_line_ptr->next_line;
+
+        // Corner case last line
+        if (aux_cell_ptr)
+          txt_slc->current_line_ptr->next_line->prev_line = txt_slc->current_line_ptr->prev_line;
+
+        free(txt_slc->current_line_ptr);
+
+        // Deletion first line
+        if (!txt_slc->current_line_num) {
+          new_x = cursor_x;
+          new_y = cursor_y;
+
+          txt_slc->first_scr_line = aux_cell_ptr;
+          txt_slc->current_line_ptr = aux_cell_ptr;
+
+          // Current line was freed, so we cant access current_line->next_line
+          if (_display_txt(txt_slc->first_scr_line) == ERROR) return ERROR;
+
+        } else {
+          new_x = prev_line_size-1;
+          new_y = cursor_y-1;
+
+          txt_slc->current_line_ptr = aux_cell_ptr_;
+
+          if (_display_txt(txt_slc->first_scr_line) == ERROR) return ERROR;          
         }
+        head->num_of_lines -= 1;
+        txt_slc->current_line_num -= 1;
 
-        // Realloc lines array
-        txt->lines = realloc(txt->lines, (txt->num_of_lines-1) * sizeof(char*));
-
-        txt->num_of_lines -= 1;
-
-        new_x = prev_line_size-1 +line_size-1;
-        new_y = cursor_y-1;
-
-        //Writing on screen buffer
-        if (_display_txt(txt, *txt_slc) == ERROR) {
-          return ERROR;
-        }
+      // Regular Backspace deletion
       } else {
-        for (size_t i = cursor_x-1;i < line_size;i++) {
-          txt->lines[current_line][i] = txt->lines[current_line][i+1];
-        }
-        txt->lines[current_line][line_size] = '\0';  
+        memmove(&(txt_slc->current_line_ptr->content[cursor_x-1]), 
+          &(txt_slc->current_line_ptr->content[cursor_x]),
+          line_size - cursor_x);
+
+        txt_slc->current_line_ptr->content[line_size-1] = '\0';
 
         clrtoeol();
-        mvaddstr(cursor_y, 0, txt->lines[current_line]);
+        mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
 
         new_x = cursor_x-1;
         new_y = cursor_y;     
@@ -259,36 +378,69 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
 
       break;
 
+    // Case TAB (ident line)
+    case '\t':
+    case KEY_STAB:
+      // For now, 1 tab = 2 spaces
+
+      // Increase size of line
+      txt_slc->current_line_ptr->content = realloc(txt_slc->current_line_ptr->content, line_size+3);
+      txt_slc->current_line_ptr->content[line_size] = '\0';
+      txt_slc->current_line_ptr->content[line_size+1] = '\0';
+
+
+      // Shift elements
+      memmove(&(txt_slc->current_line_ptr->content[cursor_x+2]),
+        &(txt_slc->current_line_ptr->content[cursor_x]),
+        line_size - cursor_x+1);
+
+      // Insert 2 spaces
+      txt_slc->current_line_ptr->content[cursor_x] = ' ';
+      txt_slc->current_line_ptr->content[cursor_x+1] = ' ';
+
+      new_x = cursor_x+2;
+      new_y = cursor_y;
+
+      // Updating line screen buffer
+      clrtoeol();
+      mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);      
+
+      break;
+
     // Case ENTER (new line)
     case '\n':
-      // Allocate the new line
-      new_line = calloc(line_size-cursor_x+1, sizeof(char));
-
-      // Copy remain caracters after the cursor
-      strcpy(new_line, txt->lines[current_line] + cursor_x);
-
+      // Allocate new line txt cell
+      aux_cell_ptr = new_txt_cell(txt_slc->current_line_ptr->content + cursor_x);
       // Change current line size
       // TODO Refactorize
-      txt->lines[current_line] = realloc(txt->lines[current_line], cursor_x+2);
-      txt->lines[current_line][cursor_x] = '\n';
-      txt->lines[current_line][cursor_x+1] = '\0';
+      txt_slc->current_line_ptr->content = realloc(txt_slc->current_line_ptr->content, cursor_x+2);
+      txt_slc->current_line_ptr->content[cursor_x] = '\n';
+      txt_slc->current_line_ptr->content[cursor_x+1] = '\0';
 
-      // Insert new line and move all lines 1 position down
-      txt->lines = realloc(txt->lines, (txt->num_of_lines + 1) * sizeof(char*));
-      txt->lines[txt->num_of_lines] = new_line;
+      // Insert new line txt cell
+      aux_cell_ptr_ = txt_slc->current_line_ptr->next_line;
 
-      for (size_t i = txt->num_of_lines-1; i > current_line; i--) {
-        swap_chr_ptr(&(txt->lines[i]), &(txt->lines[i+1]));
-      }
+      txt_slc->current_line_ptr->next_line = aux_cell_ptr;
+      aux_cell_ptr->prev_line = txt_slc->current_line_ptr;
+
+      aux_cell_ptr->next_line = aux_cell_ptr_;
+
+      // Last line corner case
+      if (aux_cell_ptr_)
+        aux_cell_ptr_->prev_line = aux_cell_ptr;
 
       // Increase num of lines
-      txt->num_of_lines += 1;
+      head->num_of_lines += 1;
+
+      // Move current line pointer
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+      txt_slc->current_line_num += 1;
 
       new_x = 0;
       new_y = cursor_y + 1;
 
       //Writing on screen buffer
-      if (_display_txt(txt, *txt_slc) == ERROR) {
+      if (_display_txt(txt_slc->first_scr_line) == ERROR) {
         return ERROR;
       }
 
@@ -297,22 +449,23 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
     // Case common char (letter/num)
     default:
       // Increase size of line
-      txt->lines[current_line] = realloc(txt->lines[current_line], line_size+2);
-      txt->lines[current_line][line_size] = (char) k;
+      txt_slc->current_line_ptr->content = realloc(txt_slc->current_line_ptr->content, line_size+2);
+      txt_slc->current_line_ptr->content[line_size] = '\0';
 
-      // Move all elements one position to right
-      for (int i = line_size - 1; i >= cursor_x && i >= 0; i--) {
-        swap_chr(&(txt->lines[current_line][i]), &(txt->lines[current_line][i+1]));
-      }
+      // Shift elements
+      memmove(&(txt_slc->current_line_ptr->content[cursor_x+1]),
+        &(txt_slc->current_line_ptr->content[cursor_x]),
+        line_size - cursor_x+1);
+
+      // Insert new char
+      txt_slc->current_line_ptr->content[cursor_x] = (char) k;
 
       new_x = cursor_x+1;
       new_y = cursor_y;
 
-      txt->lines[current_line][line_size+1] = '\0';
-
       // Updating line screen buffer
       clrtoeol();
-      mvaddstr(cursor_y, 0, txt->lines[current_line]);
+      mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
 
   } //end switch key
 
@@ -322,25 +475,27 @@ int _write_at_cursor (int k, text* txt, text_slice* txt_slc) {
   return SUCCESS;
 }
 
-int _display_txt (text* txt, text_slice txt_slc) {
-  if (!txt->initialized)
-    return ERROR;
+int _display_txt (text* txt) {
+  // Failsafe
+  if (!txt) return ERROR;
 
   int size_x, size_y;
   getmaxyx(stdscr, size_y, size_x);
 
-  size_t scr_line = 0;
-  size_t scr_limit = size_y + txt_slc.from_y-1;
-  size_t to_txt_line = (txt->num_of_lines > scr_limit ? scr_limit : txt->num_of_lines) ;
-  size_t l;
+  text* txt_crawler;
+  int scr_line = 0;
+  int scr_limit = size_y - 2;
 
-  for (l = txt_slc.from_y ;l < to_txt_line ;l++) {
+  for (txt_crawler = txt;
+      txt_crawler && scr_line <= scr_limit;
+      txt_crawler = txt_crawler->next_line) {
+
     clrtoeol();
-    mvaddstr(scr_line, 0, txt->lines[l]);
+    mvaddstr(scr_line, 0, txt_crawler->content);
     scr_line += 1;
   }
 
-  for (size_t i = l; i < scr_limit; i++) {
+  for (size_t i = scr_line; i <= scr_limit; i++) {
     clrtoeol();
     mvprintw(i, 0, "*");
   }
@@ -365,22 +520,24 @@ int _run (file* f) {
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
 
-  text_slice txt_slc;
-  txt_slc.from_y = 0;
-  txt_slc.to_y = (f->txt->num_of_lines > size_y ? size_y-1 : f->txt->num_of_lines-1);
-
-  if(_display_txt(f->txt, txt_slc) == ERROR) {
+  if(_display_txt(f->txt_head->first_line) == ERROR) {
     return ERROR;
   }
 
+  text_slice* txt_slc = calloc(1, sizeof(text_slice));
+  txt_slc->current_line_ptr = f->txt_head->first_line;
+  txt_slc->current_line_num = 0;
+  txt_slc->first_scr_line = f->txt_head->first_line;
+
   // Initializing bar
-  b.init(&b, f, &txt_slc);
+  b.init(&b, f, txt_slc);
   b.display_bar(&b);
 
   move(0, 0);
 
   int k;
-  //bool insert_mode = true;
+  text_head* cpy_buffer = NULL;
+  bool buffer_exists = false;
 
   while (1) {
     k = getch();
@@ -390,25 +547,47 @@ int _run (file* f) {
     if (k == CTRL('q')) {
       break;
     } else if (k ==  CTRL('v')) {
-      _move_cursor(END_LINE, f->txt, &txt_slc);
+      _move_cursor(END_LINE, f->txt_head, txt_slc);
     } else if (k == CTRL('t')) {
-      _move_cursor(BEGIN_LINE, f->txt, &txt_slc);
-    } else if (k ==  CTRL(']')) {
-      _move_cursor(END_FILE, f->txt, &txt_slc);
-    
+      _move_cursor(BEGIN_LINE, f->txt_head, txt_slc);
+    } else if (k == CTRL('c')) {
+      _move_cursor(NEXT_LINE, f->txt_head, txt_slc);
+    } else if (k == CTRL('x')) {
+      _move_cursor(PREV_LINE, f->txt_head, txt_slc);
+    } else if (k == CTRL('[')) {
+      _move_cursor(BEGIN_FILE, f->txt_head, txt_slc);
+    } else if (k == CTRL(']')) {
+      _move_cursor(END_FILE, f->txt_head, txt_slc);
+    } else if (k == CTRL('u')) {
+    // Clean old buffer if exists
+    if (buffer_exists) free(cpy_buffer);
+
+    cpy_buffer = _change_to_select_mode(txt_slc);
+    buffer_exists = true;
+
+    } else if (k == CTRL('y')) {
+    if (cpy_buffer && buffer_exists) {
+      paste_from_txt(f->txt_head, txt_slc, cpy_buffer);
+
+      free(cpy_buffer);
+      buffer_exists = false;
+    }
     // Insertion cases
     } else {
       if (is_arrow(k)) { 
-        if (_can_move_cursor(k, f->txt, txt_slc))
-          _move_cursor(k, f->txt, &txt_slc);
+        if (_can_move_cursor(k, txt_slc->current_line_ptr))
+          _move_cursor(k, f->txt_head, txt_slc);
       } else { 
-          _write_at_cursor(k, f->txt, &txt_slc);
+          _write_at_cursor(k, f->txt_head, txt_slc);
       }
     }
 
     usleep(250);
     b.display_lines_count(&b);
   }
+
+  //_destroy_txt(cpy_buffer);
+  free(txt_slc);
 
   attron(A_REVERSE);
   mvprintw(size_y-1, 0, "Salvar o buffer modificado? (s/N) => ");
@@ -442,21 +621,158 @@ int _run (file* f) {
   return SUCCESS;
 }
 
-int _scroll_txt(int n_lines, text* txt, text_slice* txt_slc) {
-  // Check if the scroll is valid
-  if (txt_slc->to_y + n_lines > txt->num_of_lines ||
-      txt_slc->from_y + n_lines > txt->num_of_lines) {
-    return ERROR;
+text* _scroll_txt(int n_lines, text* txt) {
+  text* txt_crawler = txt;
+  // Positive scroll case
+  if (n_lines > 0) {
+    size_t i = 0;
+    while(txt_crawler && i < n_lines) {
+      txt_crawler = txt_crawler->next_line;
+      i += 1;
+    } 
+  // Negative scroll case
+  } else if (n_lines < 0) {
+    size_t i = 0;
+    size_t limit = -n_lines;
+    while(txt_crawler && i < limit) {
+      txt_crawler = txt_crawler->prev_line;
+      i += 1;
+    }
+  // No scroll case
+  } else {
+    return txt;
   }
-
-  txt_slc->from_y += n_lines;
-  txt_slc->to_y += n_lines;
-
-  return SUCCESS;
+  //if (txt_crawler) *txt = *txt_crawler;
+  return txt_crawler;
 }
 
 int _clean () {
   endwin();
+  return SUCCESS;
+}
+
+text_head* _change_to_select_mode (text_slice* txt_slc) {
+
+  // Create new txt_buffer
+  text_head* txt_buffer = calloc(1, sizeof(text_head));
+
+  if (!txt_buffer) return NULL;
+
+  txt_buffer->current_line = 0;
+  txt_buffer->num_of_lines = 1;
+  txt_buffer->initialized = true;
+
+  int size_x, size_y;
+  int cursor_x, cursor_y;
+
+  getmaxyx(stdscr, size_y, size_x);
+  getyx(stdscr, cursor_y, cursor_x);
+
+  // Select current line on screen
+  attron(A_REVERSE);
+  mvprintw(cursor_y, 0, txt_slc->current_line_ptr->content);
+
+  if (cursor_y != size_y-2) move(cursor_y+1, 0);
+
+  int k = 0;
+  size_t lines_offset = 1;
+  text* current_line_cpy = txt_slc->current_line_ptr;
+
+  while (k != CTRL('u')) {
+    move(cursor_y, 0);
+    k = getch();
+
+    // TODO scroll case
+
+    if (k == KEY_UP || k == CTRL('x')) {
+      // "From" > "to" case not implemented (yet?)
+      if(lines_offset == 1) continue; 
+
+      // Scroll case, not implemented yet
+      if(cursor_y == 0) continue;
+
+      // Out of bounds
+      if(!txt_slc->current_line_ptr->prev_line) continue;
+      
+      // Unselect current line on screen
+      attroff(A_REVERSE);
+      mvprintw(cursor_y, 0, txt_slc->current_line_ptr->content);
+      attron(A_REVERSE);
+
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->prev_line;
+      txt_slc->current_line_num -= 1;
+
+      txt_buffer->current_line -= 1;
+      txt_buffer->num_of_lines -= 1;
+
+      cursor_y -= 1;
+      lines_offset -= 1;
+    } else if (k == KEY_DOWN || k == CTRL('c')) {
+      // Out of bounds
+      if (!txt_slc->current_line_ptr->next_line) continue;
+
+      // Scroll case, not implemented yet
+      if (cursor_y == size_y-2) continue;
+
+      // Select next line on screen
+      mvprintw(cursor_y+1, 0, txt_slc->current_line_ptr->next_line->content);
+
+      txt_slc->current_line_ptr = txt_slc->current_line_ptr->next_line;
+      txt_slc->current_line_num += 1;
+
+      txt_buffer->current_line += 1;
+      txt_buffer->num_of_lines += 1;
+
+      cursor_y += 1;
+      lines_offset += 1;
+    }
+  }
+
+  // Write on txt buffer
+  text* first_cell = new_txt_cell(current_line_cpy->content);
+
+  txt_buffer->first_line = first_cell;
+
+  text* prev_txt = txt_buffer->first_line;
+  text* new_cell = first_cell;
+  text** prev_next_addr = &(prev_txt->next_line);
+
+  for(size_t i = 1;i < lines_offset;i++) {
+    current_line_cpy = current_line_cpy->next_line;
+
+    new_cell = new_txt_cell(current_line_cpy->content);
+    new_cell->prev_line = prev_txt;
+    *prev_next_addr = new_cell;
+
+    prev_txt = new_cell;
+    prev_next_addr = &(prev_txt->next_line);
+  }
+
+  txt_buffer->last_line = new_cell;
+
+  return txt_buffer;
+}
+
+int paste_from_txt(text_head* head, text_slice* txt_slc , text_head* txt_buffer) {
+  int cursor_x, cursor_y;
+  getyx(stdscr, cursor_y, cursor_x);
+
+  // Concatenate txt_buffer with txt at current line
+  txt_buffer->first_line->prev_line = txt_slc->current_line_ptr;
+  txt_buffer->last_line->next_line = txt_slc->current_line_ptr->next_line;
+  
+  text* txt_aux = txt_slc->current_line_ptr->next_line;
+
+  txt_slc->current_line_ptr->next_line = txt_buffer->first_line;
+  txt_aux->prev_line = txt_buffer->last_line;
+
+  // Update num of lines
+  head->num_of_lines += txt_buffer->num_of_lines;
+
+  // Update screen buffer
+  _display_txt(txt_slc->first_scr_line);
+  move(cursor_y, cursor_x);
+
   return SUCCESS;
 }
 

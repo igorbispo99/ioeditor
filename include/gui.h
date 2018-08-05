@@ -15,45 +15,53 @@
 enum COMMAND_KEYS {
   END_LINE,
   BEGIN_LINE,
+  NEXT_LINE,
+  PREV_LINE,
+  BEGIN_FILE,
   END_FILE
 };
 
 // Class text_slice
 typedef struct text_slice {
   //int from_x, to_x;
-  int from_y, to_y;
+  text* current_line_ptr;
+  text* first_scr_line;
+  size_t current_line_num;
 } text_slice;
 
 // Class gui
 #define gui_ {&_run, &_can_move_cursor,\
 &_move_cursor, &_write_at_cursor, &_display_txt,\
-&_scroll_txt, &_clean}
+&_scroll_txt, &_clean, &_change_to_select_mode}
 
 typedef struct gui gui;
 
 struct gui {
   int (*run) (file*);
-  bool (*can_move_cursor) (int, text*, text_slice);
-  int (*move_cursor) (int, text*, text_slice*);
-  int (*write_at_cursor) (int, text*, text_slice*);
-  int (*display_txt) (text*, text_slice);
-  int (*scroll_txt) (int, text*, text_slice*);
+  bool (*can_move_cursor) (int, text*);
+  int (*move_cursor) (int, text_head*, text_slice*);
+  int (*write_at_cursor) (int, text_head*, text_slice*);
+  int (*display_txt) (text*);
+  text* (*scroll_txt) (int, text*);
   int (*clean) (void);
+  text_head* (*change_to_select_mode) (text_slice*);
 };
 
 int _run(file*);
-bool _can_move_cursor(int, text*, text_slice);
-int _move_cursor(int, text*, text_slice*);
-int _write_at_cursor(int, text*, text_slice*);
-int _display_txt(text*, text_slice);
+bool _can_move_cursor(int, text*);
+int _move_cursor(int, text_head*, text_slice*);
+int _write_at_cursor(int, text_head*, text_slice*);
+int _display_txt(text*);
 int _clean (void);
-int _scroll_txt(int, text*, text_slice*);
+text* _scroll_txt(int, text*);
+text_head* _change_to_select_mode(text_slice*);
 // End of class gui
 
 // Misc functions
 bool is_arrow(int);
 void swap_chr_ptr(char**, char**);
 void swap_chr(char* a, char* b);
+int paste_from_txt(text_head*, text_slice*, text_head*);
 
 // Operator functions
 typedef void (*op_func) (int* x, int* y);
