@@ -1,5 +1,6 @@
-# ioeditor
-Igor's Own Editor
+# IOEditor (Igor's Own Editor)
+
+Editor de texto minimalista feito em C, necessaria biblioteca ncurses, e autotools para compilar.
 
 ## Para instalar :
 
