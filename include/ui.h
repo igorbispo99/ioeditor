@@ -10,6 +10,7 @@
 #include "file_manager.h"
 #include "bot_bar.h"
 #include "gui.h"
+#include "syntax_engine.h"
 
 #define UI_H_
 #endif

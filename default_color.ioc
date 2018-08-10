@@ -1,0 +1,6 @@
+YELLOW:;#include int char enum void double float struct bool return true false if else NULL
+GREEN:function
+WHITE:quotes
+RED:operator
+BLACK:background
+MAGENTA:numbers

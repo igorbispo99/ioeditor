@@ -45,7 +45,7 @@ int _display_lines_count(bar *b) {
 
   sprintf(lines_count, "%s | %ld/%ld",
   b->bar_f->filename, 
-  b->txt_slc->current_line_num,
+  b->txt_slc->current_line_num+1,
   b->bar_f->txt_head->num_of_lines);
 
   // Update size lines_count

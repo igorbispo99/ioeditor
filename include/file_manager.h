@@ -15,8 +15,15 @@ enum SIGNAL {
 };
 
 //Class text (linked list)
-typedef struct text_head text_head;
 typedef struct text text;
+
+struct text {
+  text* next_line;
+  text* prev_line;
+  char* content;
+};
+
+typedef struct text_head text_head;
 
 struct text_head {
   text* first_line;
@@ -24,12 +31,6 @@ struct text_head {
   size_t num_of_lines;
   size_t current_line;
   bool initialized;
-};
-
-struct text {
-  text* next_line;
-  text* prev_line;
-  char* content;
 };
 
 text* new_txt_cell(char*);

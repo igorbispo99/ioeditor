@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "bot_bar.h"
+#include "syntax_engine.h"
 
 // OP functions
 void _op_up(int* x, int* y) {*x=*x; *y=*y-1;}
@@ -71,7 +72,7 @@ bool _can_move_cursor (int k, text* txt) {
   return true;
 }
 
-int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
+int _move_cursor (int k, text_head* head, text_slice* txt_slc, syntax_engine* sytx) {
   int cursor_x, new_x, size_x;
   int cursor_y, new_y, size_y;
   bool scroll = false;
@@ -106,7 +107,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
     // Scroll case
     if (cursor_y == size_y - 2) {
       text* new_first = _scroll_txt(1, txt_slc->first_scr_line);
-      _display_txt(new_first);
+      _display_txt(new_first, sytx);
       txt_slc->first_scr_line = new_first;
 
       move(cursor_y, strlen(txt_slc->current_line_ptr->next_line->content) - 1);
@@ -133,7 +134,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
     // Scroll case
     if (cursor_y == 0) {
       text* new_first = _scroll_txt(-1, txt_slc->first_scr_line);
-      _display_txt(new_first);
+      _display_txt(new_first, sytx);
       txt_slc->first_scr_line = new_first;
 
       move(cursor_y, strlen(txt_slc->current_line_ptr->prev_line->content) - 1);
@@ -153,7 +154,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
 
   // Go to begin of file
   if (k == BEGIN_FILE) {
-    _display_txt(head->first_line);
+    _display_txt(head->first_line, sytx);
 
     txt_slc->current_line_num = 0;
     txt_slc->current_line_ptr = head->first_line;
@@ -176,7 +177,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
     text* new_first = _scroll_txt(-scroll_offset, txt_slc->first_scr_line);
     txt_slc->first_scr_line = new_first;
 
-    _display_txt(txt_slc->first_scr_line);
+    _display_txt(txt_slc->first_scr_line, sytx);
 
     move(head->num_of_lines > size_y ? size_y-2 : head->num_of_lines-1, 0);
     refresh();
@@ -200,7 +201,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
 
       if (new_y == size_y-1) {
         text* new_first = _scroll_txt(1, txt_slc->first_scr_line);
-        _display_txt(new_first);
+        _display_txt(new_first, sytx);
         txt_slc->first_scr_line = new_first;
 
         scroll = true;
@@ -211,7 +212,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
 
       if (new_y == -1) {
         text* new_first = _scroll_txt(-1, txt_slc->first_scr_line);   
-        _display_txt(new_first);
+        _display_txt(new_first, sytx);
         txt_slc->first_scr_line = new_first;
 
         scroll = true;        
@@ -232,7 +233,7 @@ int _move_cursor (int k, text_head* head, text_slice* txt_slc) {
   }
 }
 
-int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
+int _write_at_cursor (int k,text_head* head, text_slice* txt_slc, syntax_engine* sytx) {
   int cursor_x, new_x;
   int cursor_y, new_y;
   int size_x, size_y;
@@ -284,7 +285,7 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
         head->num_of_lines -= 1;
 
         //Writing on screen buffer
-        if (_display_txt(txt_slc->first_scr_line) == ERROR) {
+        if (_display_txt(txt_slc->first_scr_line, sytx) == ERROR) {
          return ERROR;
         }
 
@@ -297,7 +298,8 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
         txt_slc->current_line_ptr->content[line_size-1] = '\0';
 
         // Write at screen buffer
-        delch();
+        //delch();
+        sytx->print_line_color(sytx,txt_slc->current_line_ptr->content, txt_slc->current_line_num, 0);
       }
 
       new_x = cursor_x;
@@ -348,7 +350,7 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
           txt_slc->current_line_ptr = aux_cell_ptr;
 
           // Current line was freed, so we cant access current_line->next_line
-          if (_display_txt(txt_slc->first_scr_line) == ERROR) return ERROR;
+          if (_display_txt(txt_slc->first_scr_line, sytx) == ERROR) return ERROR;
 
         } else {
           new_x = prev_line_size-1;
@@ -356,7 +358,7 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
 
           txt_slc->current_line_ptr = aux_cell_ptr_;
 
-          if (_display_txt(txt_slc->first_scr_line) == ERROR) return ERROR;          
+          if (_display_txt(txt_slc->first_scr_line, sytx) == ERROR) return ERROR;          
         }
         head->num_of_lines -= 1;
         txt_slc->current_line_num -= 1;
@@ -370,7 +372,8 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
         txt_slc->current_line_ptr->content[line_size-1] = '\0';
 
         clrtoeol();
-        mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
+        //mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
+        sytx->print_line_color(sytx,txt_slc->current_line_ptr->content, cursor_y, 0);
 
         new_x = cursor_x-1;
         new_y = cursor_y;     
@@ -388,7 +391,6 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
       txt_slc->current_line_ptr->content[line_size] = '\0';
       txt_slc->current_line_ptr->content[line_size+1] = '\0';
 
-
       // Shift elements
       memmove(&(txt_slc->current_line_ptr->content[cursor_x+2]),
         &(txt_slc->current_line_ptr->content[cursor_x]),
@@ -403,7 +405,8 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
 
       // Updating line screen buffer
       clrtoeol();
-      mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);      
+      sytx->print_line_color(sytx,txt_slc->current_line_ptr->content, cursor_y, 0);
+     // mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);      
 
       break;
 
@@ -440,7 +443,7 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
       new_y = cursor_y + 1;
 
       //Writing on screen buffer
-      if (_display_txt(txt_slc->first_scr_line) == ERROR) {
+      if (_display_txt(txt_slc->first_scr_line, sytx) == ERROR) {
         return ERROR;
       }
 
@@ -465,7 +468,9 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
 
       // Updating line screen buffer
       clrtoeol();
-      mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
+      sytx->print_line_color(sytx,txt_slc->current_line_ptr->content, cursor_y, 0);
+
+      //mvaddstr(cursor_y, 0, txt_slc->current_line_ptr->content);
 
   } //end switch key
 
@@ -475,7 +480,7 @@ int _write_at_cursor (int k,text_head* head, text_slice* txt_slc) {
   return SUCCESS;
 }
 
-int _display_txt (text* txt) {
+int _display_txt (text* txt, syntax_engine* sytx) {
   // Failsafe
   if (!txt) return ERROR;
 
@@ -491,7 +496,8 @@ int _display_txt (text* txt) {
       txt_crawler = txt_crawler->next_line) {
 
     clrtoeol();
-    mvaddstr(scr_line, 0, txt_crawler->content);
+    sytx->print_line_color(sytx, txt_crawler->content, scr_line, 0);
+    //mvaddstr(scr_line, 0, txt_crawler->content);
     scr_line += 1;
   }
 
@@ -504,7 +510,7 @@ int _display_txt (text* txt) {
   return SUCCESS;
 }
 
-int _run (file* f) {
+int _run (file* f, syntax_engine* sytx) {
   if (!f->initialized) {
     return ERROR;
   }
@@ -515,12 +521,14 @@ int _run (file* f) {
   initscr();
   noecho();
   raw();
+  start_color();
   setlocale(LC_CTYPE, "");
   //nonl();
   keypad(stdscr, TRUE);
   getmaxyx(stdscr, size_y, size_x);
+  sytx->init_color(sytx);
 
-  if(_display_txt(f->txt_head->first_line) == ERROR) {
+  if(_display_txt(f->txt_head->first_line, sytx) == ERROR) {
     return ERROR;
   }
 
@@ -547,17 +555,17 @@ int _run (file* f) {
     if (k == CTRL('q')) {
       break;
     } else if (k ==  CTRL('v')) {
-      _move_cursor(END_LINE, f->txt_head, txt_slc);
+      _move_cursor(END_LINE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('t')) {
-      _move_cursor(BEGIN_LINE, f->txt_head, txt_slc);
+      _move_cursor(BEGIN_LINE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('c')) {
-      _move_cursor(NEXT_LINE, f->txt_head, txt_slc);
+      _move_cursor(NEXT_LINE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('x')) {
-      _move_cursor(PREV_LINE, f->txt_head, txt_slc);
+      _move_cursor(PREV_LINE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('[')) {
-      _move_cursor(BEGIN_FILE, f->txt_head, txt_slc);
+      _move_cursor(BEGIN_FILE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL(']')) {
-      _move_cursor(END_FILE, f->txt_head, txt_slc);
+      _move_cursor(END_FILE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('u')) {
     // Clean old buffer if exists
     if (buffer_exists) free(cpy_buffer);
@@ -567,7 +575,7 @@ int _run (file* f) {
 
     } else if (k == CTRL('y')) {
     if (cpy_buffer && buffer_exists) {
-      paste_from_txt(f->txt_head, txt_slc, cpy_buffer);
+      paste_from_txt(f->txt_head, txt_slc, cpy_buffer, sytx);
 
       free(cpy_buffer);
       buffer_exists = false;
@@ -576,9 +584,9 @@ int _run (file* f) {
     } else {
       if (is_arrow(k)) { 
         if (_can_move_cursor(k, txt_slc->current_line_ptr))
-          _move_cursor(k, f->txt_head, txt_slc);
+          _move_cursor(k, f->txt_head, txt_slc, sytx);
       } else { 
-          _write_at_cursor(k, f->txt_head, txt_slc);
+          _write_at_cursor(k, f->txt_head, txt_slc, sytx);
       }
     }
 
@@ -753,7 +761,7 @@ text_head* _change_to_select_mode (text_slice* txt_slc) {
   return txt_buffer;
 }
 
-int paste_from_txt(text_head* head, text_slice* txt_slc , text_head* txt_buffer) {
+int paste_from_txt(text_head* head, text_slice* txt_slc , text_head* txt_buffer, syntax_engine* sytx) {
   int cursor_x, cursor_y;
   getyx(stdscr, cursor_y, cursor_x);
 
@@ -770,7 +778,7 @@ int paste_from_txt(text_head* head, text_slice* txt_slc , text_head* txt_buffer)
   head->num_of_lines += txt_buffer->num_of_lines;
 
   // Update screen buffer
-  _display_txt(txt_slc->first_scr_line);
+  _display_txt(txt_slc->first_scr_line, sytx);
   move(cursor_y, cursor_x);
 
   return SUCCESS;

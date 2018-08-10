@@ -1,16 +1,16 @@
 IDIR=./include
 CC=gcc
-CXXFLAGS=-I$(IDIR) -O0 -g -Wall -Werror -Wpedantic
+CXXFLAGS=-I$(IDIR) -O0 -g -Wall -Wpedantic
 LIBS=-lm -lncurses
 
 SRC=src
 BIN=bin
 ODIR=src/obj
 
-_DEPS= ui.h file_manager.h gui.h bot_bar.h 
+_DEPS= ui.h file_manager.h gui.h bot_bar.h syntax_engine.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ =  file_manager.o main.o gui.o bot_bar.o
+_OBJ =  file_manager.o main.o gui.o bot_bar.o syntax_engine.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all : $(BIN)/main.out

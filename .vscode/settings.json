@@ -12,6 +12,10 @@
     "file_manager.h": "c",
     "stdio.h": "c",
     "bot_bar.h": "c",
-    "stdbool.h": "c"
+    "stdbool.h": "c",
+    "ios": "c",
+    "__functional_03": "c",
+    "functional": "c",
+    "syntax_engine.h": "c"
   }
 }

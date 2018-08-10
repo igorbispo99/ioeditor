@@ -35,23 +35,24 @@ typedef struct text_slice {
 &_scroll_txt, &_clean, &_change_to_select_mode}
 
 typedef struct gui gui;
+typedef struct syntax_engine syntax_engine;
 
 struct gui {
-  int (*run) (file*);
+  int (*run) (file*, syntax_engine*);
   bool (*can_move_cursor) (int, text*);
-  int (*move_cursor) (int, text_head*, text_slice*);
-  int (*write_at_cursor) (int, text_head*, text_slice*);
-  int (*display_txt) (text*);
+  int (*move_cursor) (int, text_head*, text_slice*, syntax_engine*);
+  int (*write_at_cursor) (int, text_head*, text_slice*, syntax_engine*);
+  int (*display_txt) (text*, syntax_engine*);
   text* (*scroll_txt) (int, text*);
   int (*clean) (void);
   text_head* (*change_to_select_mode) (text_slice*);
 };
 
-int _run(file*);
+int _run(file*, syntax_engine*);
 bool _can_move_cursor(int, text*);
-int _move_cursor(int, text_head*, text_slice*);
-int _write_at_cursor(int, text_head*, text_slice*);
-int _display_txt(text*);
+int _move_cursor(int, text_head*, text_slice*, syntax_engine*);
+int _write_at_cursor(int, text_head*, text_slice*, syntax_engine*);
+int _display_txt(text*, syntax_engine*);
 int _clean (void);
 text* _scroll_txt(int, text*);
 text_head* _change_to_select_mode(text_slice*);
@@ -61,7 +62,7 @@ text_head* _change_to_select_mode(text_slice*);
 bool is_arrow(int);
 void swap_chr_ptr(char**, char**);
 void swap_chr(char* a, char* b);
-int paste_from_txt(text_head*, text_slice*, text_head*);
+int paste_from_txt(text_head*, text_slice*, text_head*, syntax_engine*);
 
 // Operator functions
 typedef void (*op_func) (int* x, int* y);

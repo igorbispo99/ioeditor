@@ -8,15 +8,21 @@ int main(int argc, char* argv[]) {
 
   file_io io = file_io_;
   gui g = gui_;
+  syntax_engine stx = syntax_engine_;
 
   file *f = (file*) malloc(sizeof(file));
-  char *s = argv[1];  
+
+  char *s = argv[1];
 
   if (io.load_txt(f, s) == ERROR) {
     return ERROR;
   }
   
-  g.run(f);
+  if (stx.init(&stx, "../default_color.ioc", NULL) == ERROR) {
+    return ERROR;
+  }
+
+  g.run(f, &stx);
 
   io.destroy_file(f);
   g.clean();
