@@ -9,7 +9,7 @@ void print_char_color(char c, int pos_y, int pos_x, int color_pair_n){
 
 bool is_operator(char c) {
   char operators[] = {'+','-','=','*','!','<','>','|','&'};
-  size_t num_of_operators = strlen(operators) - 1;
+  size_t num_of_operators = strlen(operators);
 
   for (size_t i = 0;i < num_of_operators;i++) {
     if (operators[i] == c)
