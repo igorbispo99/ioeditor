@@ -161,9 +161,13 @@ int _print_line_color (syntax_engine* sytx, char* str_line,
   size_t str_size = strlen(str_line);
   char* str_copy = strdup(str_line);
   char** get_words_addr = extract_words(str_copy, &num_of_words);
+  bool is_open_quotes = false;
 
   for (size_t i = pos_x, j = 0; i < str_size;i++) {
     if(str_copy + i == get_words_addr[j+1]) j += 1;
+
+    if (str_copy[i] == '\'' || str_copy[i] == '\"') is_open_quotes = !is_open_quotes;
+    if (is_open_quotes) attron(A_BOLD);
 
     if(isdigit(str_copy[i])) {
       print_char_color(str_line[i], pos_y, i, NUMBERS);
@@ -174,6 +178,8 @@ int _print_line_color (syntax_engine* sytx, char* str_line,
     } else {
       print_char_color(str_line[i], pos_y, i, DEFAULT_COLOR); 
     }
+
+    if (!is_open_quotes) attroff(A_BOLD);
   }
   return SUCCESS;
 }

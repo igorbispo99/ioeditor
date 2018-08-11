@@ -1,4 +1,4 @@
-YELLOW:;#include int char enum void double float struct bool return true false if else NULL
+YELLOW:;#include int char enum void double float struct bool return true false if else NULL switch case for while
 GREEN:function
 WHITE:quotes
 RED:operator
