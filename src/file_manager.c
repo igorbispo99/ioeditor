@@ -1,3 +1,4 @@
+#include "default_config.h"
 #include "file_manager.h"
 
 // Class text
@@ -147,5 +148,48 @@ int _write_file(file* f, char* filename) {
   }
 
   fclose(out_file);
+  return SUCCESS;
+}
+
+int _default_color(void) {
+  char* user_home_folder = getenv("HOME");
+  if (!user_home_folder) return ERROR;
+
+  char* config_folder_name = malloc(
+    strlen(user_home_folder) + strlen("/.ioeditor") + 1
+  );
+  
+  strcpy(config_folder_name, user_home_folder);
+  strcat(config_folder_name, "/.ioeditor");
+
+  char* config_file_name = malloc(
+    strlen(config_folder_name) + strlen("/default_color.ioc") + 1
+  );
+
+  strcpy(config_file_name, config_folder_name);
+  strcat(config_file_name, "/default_color.ioc");
+  
+  struct stat st = {0};
+
+  FILE* out_config; 
+  
+  if (stat(config_folder_name, &st) == -1) {
+    mkdir(config_folder_name, 0700);
+  } else {
+    if ( (out_config = fopen(config_file_name, "r")) ) {
+      fclose(out_config);
+      return SUCCESS;
+    }
+  }
+  
+  // Copying default color scheme to $HOME/.ioeditor/default_color.ioc
+  out_config = fopen(config_file_name, "w+");
+  
+  fprintf(out_config, DEFAULT_COLOR_IOC_);
+
+  free(config_file_name);
+  free(config_folder_name);
+  fclose(out_config);
+
   return SUCCESS;
 }

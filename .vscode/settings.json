@@ -16,6 +16,8 @@
     "ios": "c",
     "__functional_03": "c",
     "functional": "c",
-    "syntax_engine.h": "c"
-  }
+    "syntax_engine.h": "c",
+    "curses.h": "c"
+  },
+  "editor.fontFamily": "'monospace', 'monospace', monospace, 'Droid Sans Fallback'"
 }

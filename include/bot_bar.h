@@ -10,7 +10,7 @@
 &_display_lines_count, &_display_bar, \
 &_destroy_bar}
 
-#define VER_SPLASH "Igor's Own Editor v0.2"
+#define VER_SPLASH "Igor's Own Editor v0.2.5"
 
 typedef struct bar bar;
 

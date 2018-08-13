@@ -17,8 +17,12 @@ int main(int argc, char* argv[]) {
   if (io.load_txt(f, s) == ERROR) {
     return ERROR;
   }
-  
-  if (stx.init(&stx, "../default_color.ioc", NULL) == ERROR) {
+
+  if (io.write_default_color() == ERROR) {
+    return ERROR;
+  }
+
+  if (stx.init(&stx, strcat(DEFAULT_CONFIG_FOLDER(), "/default_color.ioc"), NULL) == ERROR) {
     return ERROR;
   }
 

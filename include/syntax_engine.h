@@ -1,6 +1,7 @@
 #ifndef SYNTAX_ENGINE_H_
 #define SYNTAX_ENGINE_H_
 
+#include <stdlib.h>
 #include <curses.h>
 #include <stdbool.h>
 #include <ctype.h>
