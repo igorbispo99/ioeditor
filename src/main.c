@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
   g.run(f, &stx);
 
   io.destroy_file(f);
+  stx.destroy(&stx);
   g.clean();
   
   return 0;

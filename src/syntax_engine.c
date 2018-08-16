@@ -194,3 +194,22 @@ int _init_color_pairs(syntax_engine* sytx) {
   init_pair(DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);
   return SUCCESS;
 }
+
+int _destroy_syntax_engine(syntax_engine* sytx) {
+  if (!sytx) return SUCCESS;
+
+  // TODO fix memory leek
+
+  if (sytx->dict_file) fclose(sytx->dict_file);
+
+  if (sytx->wrd_lst) {
+    if (sytx->wrd_lst->words) {
+      if (sytx->wrd_lst->words[0]) free(sytx->wrd_lst->words[0]);
+      free(sytx->wrd_lst->words);
+    }
+    free(sytx->wrd_lst);
+  }
+  //free(sytx);
+  return SUCCESS;
+}
+

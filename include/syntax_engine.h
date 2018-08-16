@@ -7,10 +7,11 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define syntax_engine_ {NULL, NULL, NULL, 0, 0, \
 0, 0, 0, &_init_syntax_engine, &_print_line_color, \
-&_init_color_pairs}
+&_init_color_pairs, &_destroy_syntax_engine}
 
 enum COLOR_TYPES {
   WORDS = 1,
@@ -50,11 +51,13 @@ struct syntax_engine {
   int (*init) (syntax_engine*, char*, text_slice*);
   int (*print_line_color) (syntax_engine*, char*, int, int);
   int (*init_color) (syntax_engine*);
+  int (*destroy) (syntax_engine*);
 };
 
 int _init_syntax_engine (syntax_engine*, char*, text_slice*);
 int _print_line_color (syntax_engine*, char*, int, int);
 int _init_color_pairs (syntax_engine*);
+int _destroy_syntax_engine(syntax_engine*);
 // End of class syntax_engine
 
 char* return_char_pos(char*, char);
