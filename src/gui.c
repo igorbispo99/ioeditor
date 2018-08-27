@@ -562,9 +562,9 @@ int _run (file* f, syntax_engine* sytx) {
       _move_cursor(NEXT_LINE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('x')) {
       _move_cursor(PREV_LINE, f->txt_head, txt_slc, sytx);
-    } else if (k == CTRL('[')) {
-      _move_cursor(BEGIN_FILE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL(']')) {
+      _move_cursor(BEGIN_FILE, f->txt_head, txt_slc, sytx);
+    } else if (k == CTRL('\\')) {
       _move_cursor(END_FILE, f->txt_head, txt_slc, sytx);
     } else if (k == CTRL('u')) {
     // Clean old buffer if exists
